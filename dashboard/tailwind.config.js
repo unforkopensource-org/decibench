@@ -1,0 +1,71 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{vue,ts}'],
+  theme: {
+    extend: {
+      colors: {
+        // Decibench palette — dark product ink with warm, grounded accents.
+        cloud: {
+          50: '#f7faf7',
+          100: '#eef4ef',
+          200: '#dce6df',
+          300: '#c3d2c8',
+        },
+        ink: {
+          50: '#f6f7f8',
+          100: '#e9ecef',
+          200: '#d7dde3',
+          300: '#b4bec8',
+          400: '#7f8d9b',
+          500: '#5b6672',
+          600: '#404954',
+          700: '#2e353d',
+          800: '#1b2229',
+          900: '#10161c',
+          950: '#090d12',
+        },
+        sage: {
+          50: '#eff8f2',
+          100: '#dcefe2',
+          200: '#b8dcc3',
+          300: '#89c09b',
+          400: '#58a36f',
+          500: '#3c8557',
+          600: '#2f6a46',
+          700: '#255438',
+          800: '#1e432d',
+          900: '#173625',
+        },
+        coral: {
+          50: '#fff2ec',
+          100: '#ffd8ca',
+          200: '#ffb294',
+          300: '#ff8a63',
+          400: '#ff6b3c',
+          500: '#dd4f23',
+          600: '#b6401d',
+          700: '#90331a',
+          800: '#702a18',
+          900: '#592316',
+        },
+        gold: {
+          50: '#fff8e6',
+          100: '#ffefbf',
+          200: '#ffdc75',
+          300: '#f8c73d',
+          400: '#e7af13',
+          500: '#bc8d08',
+          600: '#947007',
+          700: '#735805',
+          800: '#594505',
+          900: '#473706',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'ui-sans-serif', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+    },
+  },
+  plugins: [],
+}

@@ -1,0 +1,250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: theme('fontFamily.sans');
+    @apply bg-cloud-50 text-ink-900 antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(220, 239, 226, 0.4), transparent 40%),
+      radial-gradient(circle at bottom right, rgba(255, 242, 236, 0.3), transparent 40%),
+      linear-gradient(180deg, #f7faf7 0%, #f2f6f3 100%);
+  }
+
+  ::selection {
+    background: rgba(60, 133, 87, 0.18);
+    color: #10161c;
+  }
+
+  code,
+  pre {
+    font-family: theme('fontFamily.mono');
+  }
+}
+
+@layer components {
+  /* ── Cards ── */
+  .card {
+    @apply rounded-xl border border-ink-200/80 bg-white;
+    box-shadow:
+      0 1px 3px rgba(16, 22, 28, 0.06),
+      0 12px 36px -12px rgba(16, 22, 28, 0.12);
+  }
+
+  .card-dark {
+    @apply rounded-xl border border-white/10 bg-ink-950 text-white;
+    box-shadow:
+      0 1px 3px rgba(9, 13, 18, 0.3),
+      0 20px 60px -20px rgba(9, 13, 18, 0.7);
+  }
+
+  /* ── Pills ── */
+  .pill {
+    @apply inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium;
+  }
+
+  .pill-pass {
+    @apply pill bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80;
+  }
+
+  .pill-fail {
+    @apply pill bg-rose-50 text-rose-700 ring-1 ring-rose-200/80;
+  }
+
+  .pill-warn {
+    @apply pill bg-amber-50 text-amber-700 ring-1 ring-amber-200/80;
+  }
+
+  .pill-info {
+    @apply pill bg-cloud-100 text-ink-600 ring-1 ring-ink-200/60;
+  }
+
+  .pill-muted {
+    @apply pill bg-ink-100 text-ink-600;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-950 text-white shadow-sm;
+  }
+
+  .btn-primary:hover {
+    @apply bg-ink-800;
+  }
+
+  .btn-ghost {
+    @apply btn bg-white text-ink-700 ring-1 ring-ink-200 hover:bg-ink-50;
+  }
+
+  .btn-soft {
+    @apply btn bg-cloud-100 text-ink-800 ring-1 ring-white/20 hover:bg-white;
+  }
+
+  /* ── Form ── */
+  .input {
+    @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2.5 text-sm transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100;
+  }
+
+  .label {
+    @apply mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.22em];
+  }
+
+  /* ── Layout ── */
+  .section-shell {
+    @apply mx-auto max-w-7xl px-5 sm:px-8;
+  }
+
+  .section-title {
+    @apply text-3xl font-semibold tracking-tight text-ink-950 sm:text-4xl;
+  }
+
+  .section-copy {
+    @apply mt-4 max-w-2xl text-base leading-7 text-ink-600 sm:text-lg;
+  }
+
+  /* ── Score ring ── */
+  .score-ring {
+    --score: 0;
+    --size: 120px;
+    --stroke: 8;
+    width: var(--size);
+    height: var(--size);
+  }
+
+  .score-ring circle {
+    fill: none;
+    stroke-width: var(--stroke);
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
+  .score-ring .track {
+    stroke: rgba(255, 255, 255, 0.08);
+  }
+
+  .score-ring .progress {
+    stroke-dasharray: 408;
+    stroke-dashoffset: calc(408 - (408 * var(--score)) / 100);
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Bars ── */
+  .category-bar {
+    @apply h-1.5 overflow-hidden rounded-full bg-ink-100;
+  }
+
+  .category-bar-fill {
+    @apply h-full rounded-full transition-all duration-700 ease-out;
+  }
+
+  /* ── Stat card ── */
+  .stat-card {
+    @apply rounded-xl border border-ink-200 bg-white p-5 transition-all duration-150 hover:border-ink-300;
+    box-shadow: 0 1px 3px rgba(16, 22, 28, 0.06), 0 12px 36px -12px rgba(16, 22, 28, 0.1);
+  }
+
+  /* ── Home page bands ── */
+  .home-band {
+    @apply border-b border-ink-200;
+  }
+
+  .home-dark-band {
+    background:
+      radial-gradient(circle at top left, rgba(60, 133, 87, 0.16), transparent 30%),
+      radial-gradient(circle at top right, rgba(248, 199, 61, 0.12), transparent 26%),
+      linear-gradient(180deg, #10161c 0%, #090d12 100%);
+  }
+
+  .hero-backdrop {
+    background:
+      linear-gradient(90deg, rgba(9, 13, 18, 0.94) 0%, rgba(9, 13, 18, 0.82) 44%, rgba(9, 13, 18, 0.76) 100%),
+      radial-gradient(circle at 16% 30%, rgba(60, 133, 87, 0.14), transparent 24%),
+      radial-gradient(circle at 86% 18%, rgba(255, 107, 60, 0.1), transparent 22%),
+      radial-gradient(circle at 74% 78%, rgba(248, 199, 61, 0.1), transparent 24%);
+  }
+
+  .hero-glow {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(60, 133, 87, 0.2), transparent 18%),
+      radial-gradient(circle at 85% 20%, rgba(255, 107, 60, 0.12), transparent 18%),
+      radial-gradient(circle at 75% 75%, rgba(248, 199, 61, 0.1), transparent 20%);
+  }
+
+  /* ── Metric tiles (dark bg) ── */
+  .metric-tile {
+    @apply rounded-xl border border-white/10 bg-white/5 p-5 text-white;
+    backdrop-filter: blur(18px);
+  }
+
+  .metric-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50;
+  }
+
+  /* ── Workflow step ── */
+  .workflow-step {
+    @apply rounded-xl border border-ink-200 bg-white p-5;
+    box-shadow: 0 1px 3px rgba(16, 22, 28, 0.06), 0 12px 36px -12px rgba(16, 22, 28, 0.1);
+  }
+
+  /* ── Browser frame ── */
+  .browser-frame {
+    @apply overflow-hidden rounded-xl border border-ink-300/80 bg-white;
+    box-shadow: 0 24px 60px -24px rgba(16, 22, 28, 0.4);
+  }
+
+  .browser-chrome {
+    @apply flex items-center justify-between gap-4 border-b border-ink-200 bg-cloud-100 px-4 py-3;
+  }
+
+  .browser-dot {
+    @apply h-2.5 w-2.5 rounded-full;
+  }
+
+  .browser-tab {
+    @apply truncate rounded-md bg-white px-3 py-1.5 text-xs font-medium text-ink-500 ring-1 ring-ink-200/60;
+  }
+
+  /* ── CLI command card ── */
+  .cli-card {
+    @apply rounded-xl border border-white/10 bg-white/5 p-5;
+    backdrop-filter: blur(12px);
+  }
+
+  /* ── AI Judge ── */
+  .card-ai-judge {
+    @apply rounded-xl border border-violet-200;
+    background: linear-gradient(135deg, rgba(237, 233, 254, 0.8) 0%, rgba(243, 232, 255, 0.6) 50%, rgba(237, 233, 254, 0.4) 100%);
+    box-shadow:
+      0 1px 3px rgba(109, 40, 217, 0.06),
+      0 8px 24px -8px rgba(109, 40, 217, 0.1);
+  }
+
+  .pill-ai {
+    @apply pill bg-violet-100 text-violet-700 ring-1 ring-violet-200/80;
+  }
+
+  .judge-reasoning-block {
+    @apply rounded-lg border-l-4 border-l-violet-400 bg-white px-4 py-3;
+    box-shadow: 0 1px 2px rgba(109, 40, 217, 0.04);
+  }
+}
