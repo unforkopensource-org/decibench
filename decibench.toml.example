@@ -13,6 +13,9 @@ default = "demo"
 #   decibench auth set gemini
 #
 # Environment variable fallback is also supported.
+telnyx_api_key = ""
+telnyx_connection_id = ""
+telnyx_from = ""
 vapi_api_key = ""
 retell_api_key = ""
 openai_api_key = ""

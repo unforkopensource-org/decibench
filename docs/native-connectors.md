@@ -12,6 +12,7 @@ treated as not yet usable in production.
 | `ws://`           | WebSocket | **Shipped**    | Real-time WebSocket agents               |
 | `exec:"..."`      | Process   | **Shipped**    | Local scripts / processes                |
 | `http://`         | HTTP      | **Shipped**    | Batch / non-realtime endpoints           |
+| `telnyx://`       | Telnyx    | **Experimental** | Use `ws://` for raw Telnyx WS today    |
 | `retell://`       | Retell    | **Experimental** | Use `ws://` for raw Retell WS today    |
 | `vapi://`         | Vapi      | **Experimental** | Use `ws://` for raw Vapi WS today      |
 | LiveKit / ElevenLabs / Bland / SIP / PSTN | — | **Planned** | Not implemented                |

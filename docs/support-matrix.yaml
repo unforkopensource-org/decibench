@@ -29,6 +29,14 @@ connectors:
     target_uri: http://host/endpoint
     status: shipped
     notes: "Batch / non-realtime agents."
+  telnyx:
+    target_uri: telnyx://destination
+    status: experimental
+    notes: >-
+      Native Telnyx connector using Call Control API and WebSocket media
+      streams. Supports direct WS mode (telnyx://ws://host:port) for
+      testing and phone number mode (telnyx://+1234567890) for outbound
+      calls. Requires telnyx_api_key and telnyx_connection_id in config.
   retell:
     target_uri: retell://agent_id
     status: experimental

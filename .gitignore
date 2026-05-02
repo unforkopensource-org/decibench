@@ -30,3 +30,4 @@ debug_output.log
 
 # Local project config
 decibench.toml
+.venv311/
