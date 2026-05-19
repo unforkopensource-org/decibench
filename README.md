@@ -36,10 +36,6 @@ Instead of making manual phone calls, Decibench allows your engineering team to:
 
 <br />
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/unforkopensource-org/decibench/main/src/decibench/api/static/workbench-preview.png" alt="Decibench Dashboard" width="800" style="border-radius: 8px; box-shadow: 0px 4px 24px rgba(0, 240, 255, 0.1);" />
-</div>
-
 ---
 
 ## 🧠 3 Powerful Testing Modes
