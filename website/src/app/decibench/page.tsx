@@ -23,7 +23,7 @@ export default function DecibenchPage() {
       {/* ─── Nav ─── */}
       <nav className="nav" style={{ borderBottom: 'none' }}>
         <Link href="/" className="nav-brand">
-          <img src="/logo.png" alt="Unfork" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
+          <img src="/unfork-logo.png" alt="Unfork" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
           <span>unfork <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/</span> decibench</span>
         </Link>
         <div className="nav-links">

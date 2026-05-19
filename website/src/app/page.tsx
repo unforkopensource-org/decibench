@@ -21,7 +21,7 @@ export default function Home() {
       {/* ─── Nav ─── */}
       <nav className="nav">
         <Link href="/" className="nav-brand">
-          <img src="/logo.png" alt="Unfork" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
+          <img src="/unfork-logo.png" alt="Unfork" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
           <span>unfork</span>
         </Link>
         <div className="nav-links">
