@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from decibench.mcp._helpers import get_store
-from decibench.mcp.tools_run import run_test, run_quick_test
+from decibench.mcp.tools_run import run_quick_test, run_test
 
 
 @pytest.fixture(autouse=True)

@@ -13,16 +13,14 @@ the backend exposes a first-class endpoint for it.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
-
 import asyncio
 import json
 import uuid
 from datetime import UTC, datetime
-from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -456,7 +454,7 @@ def rag_get_chunks(document_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="document not found")
     if len(docs) > 1:
         raise HTTPException(status_code=400, detail="id prefix matches multiple")
-    
+
     doc = docs[0]
     chunks = store.get_document_chunks(doc.id)
     return {
@@ -499,8 +497,8 @@ def rag_search_endpoint(query: str, k: int = 5) -> dict[str, Any]:
 
 @app.post("/rag/synthesize", summary="Synthesize scenarios from the corpus")
 def rag_synthesize_endpoint(body: RagSynthesizeRequest) -> dict[str, Any]:
-    from pathlib import Path as _P
     from importlib import resources
+    from pathlib import Path as _P
 
     config = load_config()
     if not config.has_judge:
@@ -548,11 +546,11 @@ def rag_synthesize_endpoint(body: RagSynthesizeRequest) -> dict[str, Any]:
 def rag_synthesize_preview(body: RagSynthesizeRequest) -> dict[str, Any]:
     import tempfile
     from pathlib import Path as _P
-    
+
     config = load_config()
     if not config.has_judge:
         raise HTTPException(status_code=400, detail="No LLM judge configured.")
-        
+
     store = _rag_store()
     if store.chunk_count() == 0:
         raise HTTPException(status_code=400, detail="Corpus is empty.")
@@ -580,11 +578,11 @@ def rag_synthesize_preview(body: RagSynthesizeRequest) -> dict[str, Any]:
             embedder_uri=config.rag.embedding,
             grounding_threshold=config.rag.grounding_threshold,
         )
-        
+
         preview_yaml = ""
         if result.written:
             preview_yaml = result.written[0].read_text()
-            
+
         return {
             "result": result.as_dict(),
             "yaml": preview_yaml
@@ -606,7 +604,7 @@ _run_events: dict[str, asyncio.Queue[dict[str, Any]]] = {}
 @app.post("/runs", summary="Start a run; returns a task_id for streaming")
 def start_run(body: RunStartRequest) -> dict[str, Any]:
     from decibench.mcp._helpers import preflight_check
-    
+
     config = load_config()
     preflight = preflight_check(body.target, body.mode, config)
     if not preflight["ok"]:

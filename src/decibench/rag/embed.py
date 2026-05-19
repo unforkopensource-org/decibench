@@ -41,7 +41,7 @@ class Embedder(Protocol):
     @property
     def dim(self) -> int: ...
 
-    def embed(self, texts: list[str]) -> "np.ndarray":
+    def embed(self, texts: list[str]) -> np.ndarray:
         """Return a (N, dim) float32 array; one row per input string."""
         ...
 
@@ -89,7 +89,7 @@ class LocalSentenceTransformerEmbedder:
         self._model = SentenceTransformer(self._model_name)
         self._dim = int(self._model.get_sentence_embedding_dimension())
 
-    def embed(self, texts: list[str]) -> "np.ndarray":
+    def embed(self, texts: list[str]) -> np.ndarray:
         import numpy as np
 
         if not texts:
@@ -126,7 +126,7 @@ class HashEmbedder:
     def dim(self) -> int:
         return self._dim
 
-    def embed(self, texts: list[str]) -> "np.ndarray":
+    def embed(self, texts: list[str]) -> np.ndarray:
         import numpy as np
 
         out = np.zeros((len(texts), self._dim), dtype=np.float32)
@@ -184,7 +184,7 @@ class OpenAICompatEmbedder:
             self._dim_cache = vec.shape[1]
         return self._dim_cache
 
-    def embed(self, texts: list[str]) -> "np.ndarray":
+    def embed(self, texts: list[str]) -> np.ndarray:
         import httpx
         import numpy as np
 

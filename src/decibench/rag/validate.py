@@ -21,7 +21,6 @@ from decibench.evaluators.compliance import _PII_PATTERNS
 from decibench.evaluators.hallucination import _is_entity_grounded
 from decibench.models import Scenario
 
-
 # Things we never want to see in a synthesized caller turn.
 _FORBIDDEN_PHRASES: tuple[str, ...] = (
     "ignore previous instructions",

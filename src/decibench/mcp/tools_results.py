@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from decibench.mcp._helpers import format_score_breakdown, get_store
 from decibench.mcp.server import mcp
-from decibench.mcp._helpers import get_store, format_score_breakdown
 
 
 @mcp.tool()

@@ -33,7 +33,6 @@ from decibench.evaluators.aggregate import (
 )
 from decibench.models import EvalResult, MetricResult
 
-
 # ----------------------------------------------------------------- helpers
 
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from functools import lru_cache
-
 from typing import Any
 
 from decibench.config import DecibenchConfig, find_config, load_config
@@ -88,12 +87,12 @@ def preflight_check(target: str, mode: str, config: DecibenchConfig) -> dict[str
 def format_run_result_rich(result: SuiteResult, run_id: str) -> dict[str, Any]:
     """Format run result into a rich dictionary for MCP output."""
     headline = "ALL PASSED" if result.passed else f"FAILED ({result.failed} failures)"
-    
+
     actions = []
     if result.failed > 0:
         actions.append("Use `list_calls` to find failed runs, then `get_call` to read traces.")
         actions.append("Use `open_workbench` to view results visually.")
-    
+
     return {
         "ok": True,
         "summary": f"Score: {result.decibench_score:.0f}/100 | {headline} | {result.total_scenarios} total scenarios",

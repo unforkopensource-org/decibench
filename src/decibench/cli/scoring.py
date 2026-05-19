@@ -7,7 +7,6 @@ from pathlib import Path
 import click
 
 from decibench.config import (
-    DEFAULT_METRIC_POLICIES,
     DecibenchConfig,
     MetricPolicy,
     find_config,

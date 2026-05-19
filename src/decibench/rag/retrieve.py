@@ -8,13 +8,10 @@ the same and we swap in a vector-DB backend without changing call sites.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from decibench.rag.embed import DEFAULT_EMBEDDER_URI, Embedder, get_embedder
 from decibench.rag.store import RagStore
-
-if TYPE_CHECKING:
-    import numpy as np
 
 
 @dataclass

@@ -18,13 +18,10 @@ import mimetypes
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from decibench.rag.embed import DEFAULT_EMBEDDER_URI, Embedder, get_embedder
 from decibench.rag.store import RagStore
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

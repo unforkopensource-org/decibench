@@ -12,7 +12,6 @@ silently reintroduce the bias.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from typing import Any
 
@@ -21,7 +20,6 @@ import websockets
 
 from decibench.connectors.websocket import WebSocketConnector
 from decibench.models import AudioBuffer
-
 
 # A 500ms PCM payload at 16kHz mono = 16000 bytes (5 x 100ms chunks).
 _PAYLOAD = b"\x00\x01" * 8000

@@ -17,9 +17,9 @@ private copy.
 
 from __future__ import annotations
 
-from decibench.rag.store import RagStore
 from decibench.rag.ingest import IngestResult, ingest_paths, ingest_text
 from decibench.rag.retrieve import RetrievalHit, retrieve
+from decibench.rag.store import RagStore
 from decibench.rag.synthesize import SynthesisResult, synthesize_scenarios
 from decibench.rag.validate import GateReport, validate_scenario
 

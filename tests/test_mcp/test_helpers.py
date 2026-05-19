@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from decibench.mcp._helpers import format_score_breakdown, get_config, get_store, _score_bar
+from decibench.mcp._helpers import _score_bar, format_score_breakdown, get_config, get_store
 from decibench.models import SuiteResult
 from decibench.store.sqlite import RunStore
 

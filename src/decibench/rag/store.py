@@ -22,7 +22,7 @@ import hashlib
 import json
 import logging
 import sqlite3
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -60,7 +60,7 @@ class StoredChunk:
     document_id: str
     ordinal: int
     text: str
-    embedding: "np.ndarray"
+    embedding: np.ndarray
     metadata: dict[str, Any]
 
 
@@ -85,7 +85,7 @@ class RagStore:
         RunStore(self.path)
 
     @contextmanager
-    def _connect(self) -> "Iterator[sqlite3.Connection]":
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self.path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         try:
@@ -140,7 +140,7 @@ class RagStore:
     def write_chunks(
         self,
         document_id: str,
-        chunks: list[tuple[str, dict[str, Any], "np.ndarray"]],
+        chunks: list[tuple[str, dict[str, Any], np.ndarray]],
     ) -> int:
         """Replace any existing chunks for the document, then write new ones.
 
@@ -219,7 +219,7 @@ class RagStore:
                 return d
         return None
 
-    def iter_chunks(self, *, document_id: str | None = None) -> "Iterator[StoredChunk]":
+    def iter_chunks(self, *, document_id: str | None = None) -> Iterator[StoredChunk]:
         import numpy as np
 
         with self._connect() as conn:

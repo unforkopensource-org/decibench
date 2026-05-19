@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from decibench.mcp._helpers import (
+    format_run_result_rich,
+    get_config,
+    get_store,
+    preflight_check,
+)
 from decibench.mcp.server import mcp
-from decibench.mcp._helpers import get_config, get_store, format_score_breakdown, preflight_check, format_run_result_rich
 
 
 @mcp.tool()

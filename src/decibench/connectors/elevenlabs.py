@@ -20,7 +20,6 @@ import json
 import logging
 import os
 import time
-import uuid
 from typing import TYPE_CHECKING, Any
 
 from decibench.connectors.base import BaseConnector
@@ -65,9 +64,10 @@ class ElevenLabsConnector(BaseConnector):
         self._stop_ping = asyncio.Event()
 
     async def connect(self, target: str, config: dict[str, Any]) -> ConnectionHandle:
-        import websockets
-        import urllib.request
         import urllib.error
+        import urllib.request
+
+        import websockets
 
         # Parse agent ID
         prefix = "elevenlabs://"

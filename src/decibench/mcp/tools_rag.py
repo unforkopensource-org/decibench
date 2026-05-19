@@ -17,13 +17,10 @@ so the calling assistant always has a next step to suggest.
 
 from __future__ import annotations
 
-import asyncio
-import tempfile
 from pathlib import Path
 from typing import Any
 
 from decibench.mcp.server import mcp
-
 
 # --------------------------------------------------------------- ingest
 
@@ -311,8 +308,8 @@ async def estimate_cost(target: str, suite: str = "quick", mode: str = "determin
     Returns a structured estimate using the local cost model for the
     configured judge provider. Deterministic mode is always ~$0.
     """
-    from decibench.llm_catalog import estimate_run_cost, judge_provider_from_uri
     from decibench.config import load_config
+    from decibench.llm_catalog import estimate_run_cost, judge_provider_from_uri
     from decibench.scenarios.loader import ScenarioLoader
 
     config = load_config()
@@ -444,15 +441,13 @@ async def synthesize_and_run(
     target. Returns the run summary plus where the synthesized suite lives
     so the user can iterate on it later.
     """
-    import shutil
     from decibench.config import load_config
+    from decibench.mcp._helpers import preflight_check
     from decibench.orchestrator import Orchestrator
     from decibench.rag import RagStore, ingest_text, synthesize_scenarios
 
-    from decibench.mcp._helpers import preflight_check
-
     config = load_config()
-    
+
     preflight = preflight_check(target, mode, config)
     if not preflight["ok"]:
         return preflight

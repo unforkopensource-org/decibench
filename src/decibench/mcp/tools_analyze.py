@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from decibench.mcp.server import mcp
 from decibench.mcp._helpers import get_store
+from decibench.mcp.server import mcp
 
 
 @mcp.tool()
@@ -121,10 +121,10 @@ def compare_runs(run_id_a: str, run_id_b: str) -> str:
     arrow = "↑" if delta > 0 else "↓" if delta < 0 else "→"
 
     lines = [
-        f"## Run Comparison",
+        "## Run Comparison",
         "",
-        f"| | Run A | Run B | Delta |",
-        f"| --- | --- | --- | --- |",
+        "| | Run A | Run B | Delta |",
+        "| --- | --- | --- | --- |",
         f"| **Score** | {a.decibench_score:.1f} | {b.decibench_score:.1f} | {arrow} {abs(delta):.1f} ({direction}) |",
         f"| **Passed** | {a.passed}/{a.total_scenarios} | {b.passed}/{b.total_scenarios} | {b.passed - a.passed:+d} |",
         f"| **Suite** | {a.suite} | {b.suite} | |",

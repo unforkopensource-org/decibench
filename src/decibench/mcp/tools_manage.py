@@ -5,8 +5,8 @@ from __future__ import annotations
 import importlib.util
 import shutil
 
-from decibench.mcp.server import mcp
 from decibench.mcp._helpers import get_config
+from decibench.mcp.server import mcp
 
 
 @mcp.tool()
@@ -143,12 +143,13 @@ def list_suites() -> str:
         Available suites with descriptions.
     """
     from importlib import resources
+
     from decibench.scenarios.loader import ScenarioLoader
 
     lines = ["## Available Test Suites", ""]
-    
+
     loader = ScenarioLoader()
-    
+
     # Static descriptions for built-ins
     desc_map = {
         "quick": "Fast health check. Covers core metrics: latency, compliance, basic task completion.",
@@ -164,22 +165,22 @@ def list_suites() -> str:
         for item in suite_pkg.iterdir():
             if item.is_dir() and not item.name.startswith("_"):
                 suites.append(item.name)
-        
+
         # Ensure full is always listed
         if "full" not in suites:
             suites.append("full")
-            
+
         for suite in sorted(suites):
             scenarios = loader.load_suite(suite)
             count = len(scenarios)
             if count == 0:
                 continue
-                
+
             desc = desc_map.get(suite, "Custom / RAG-synthesized suite.")
             lines.append(f"### `{suite}` ({count} scenarios)")
             lines.append(f"{desc}")
             lines.append("")
-            
+
     except Exception as e:
         lines.append(f"Error loading suites: {e}")
 
@@ -201,7 +202,7 @@ def open_workbench(run_id: str = "") -> str:
     url = "http://127.0.0.1:8000/#/"
     if run_id:
         url = f"http://127.0.0.1:8000/#/runs/{run_id}"
-        
+
     return (
         f"The Decibench visual workbench is available at: {url}\n\n"
         "Ensure the server is running with `decibench serve`."
@@ -220,7 +221,6 @@ def show_scoring() -> str:
     Returns:
         Current scoring configuration.
     """
-    from decibench.config import DEFAULT_METRIC_POLICIES
 
     config = get_config()
     w = config.scoring.weights
@@ -287,8 +287,8 @@ def configure_scoring(
     Returns:
         Updated scoring configuration.
     """
-    from decibench.config import find_config
     from decibench.cli._config_file import upsert_toml_key
+    from decibench.config import find_config
 
     config_path = find_config()
     if config_path is None:

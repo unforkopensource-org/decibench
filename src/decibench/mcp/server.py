@@ -35,9 +35,9 @@ Use these tools to help users:
 
 # Import tool modules to trigger registration with the mcp instance above.
 # Each module uses @mcp.tool() to register its tools.
+import decibench.mcp.tools_analyze  # noqa: E402
+import decibench.mcp.tools_inbox  # noqa: E402
+import decibench.mcp.tools_manage  # noqa: E402
+import decibench.mcp.tools_rag  # noqa: E402
+import decibench.mcp.tools_results  # noqa: E402
 import decibench.mcp.tools_run  # noqa: E402, F401
-import decibench.mcp.tools_results  # noqa: E402, F401
-import decibench.mcp.tools_analyze  # noqa: E402, F401
-import decibench.mcp.tools_manage  # noqa: E402, F401
-import decibench.mcp.tools_rag  # noqa: E402, F401
-import decibench.mcp.tools_inbox  # noqa: E402, F401

@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
-from decibench.mcp.server import mcp
 from decibench.mcp._helpers import get_config, get_store
+from decibench.mcp.server import mcp
 
 
 @mcp.tool()

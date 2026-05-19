@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
-from decibench.config import DEFAULT_METRIC_POLICIES, DecibenchConfig, ScoringConfig
+from decibench.config import DecibenchConfig, ScoringConfig
 from decibench.evaluators.score import DecibenchScorer
 from decibench.models import EvalResult, MetricResult
-
 
 # ---------------------------------------------------------------------------
 # Config model tests

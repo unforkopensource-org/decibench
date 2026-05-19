@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import os
-from unittest.mock import patch
-from typing import Any
-import pytest
 import sqlite3
 
+from decibench.config import _redact_secrets
 from decibench.mcp._helpers import format_run_result_rich
 from decibench.models import SuiteResult
 from decibench.store.privacy import RedactionPolicy
-from decibench.config import _redact_secrets
 from decibench.store.sqlite import RunStore
 
 
@@ -98,7 +94,7 @@ def test_bug_008_schema_version_insert_or_ignore(tmp_path):
 
     # Initializing RunStore should not overwrite schema_version with '1'
     store = RunStore(path=db_path)
-    
+
     with store._connect() as conn2:
         row = conn2.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
         assert row["value"] == "4"
