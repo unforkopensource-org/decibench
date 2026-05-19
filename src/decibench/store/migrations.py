@@ -178,16 +178,12 @@ def _migrate_v1_to_v2(conn: sqlite3.Connection) -> None:
     # Also add indices for common dashboard queries
     conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_scenarios_run_id ON runs_scenarios(run_id)")
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_runs_metrics_scenario_run_id "
-        "ON runs_metrics(scenario_run_id)"
+        "CREATE INDEX IF NOT EXISTS idx_runs_metrics_scenario_run_id ON runs_metrics(scenario_run_id)"
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_traces_events_call_id ON traces_events(call_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_traces_segments_call_id ON traces_segments(call_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_traces_spans_call_id ON traces_spans(call_id)")
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_runs_spans_scenario_run_id "
-        "ON runs_spans(scenario_run_id)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_spans_scenario_run_id ON runs_spans(scenario_run_id)")
 
     # We do NOT backfill the new tables with existing data in `runs` and `call_traces` payloads
     # immediately because this could be a heavy operation for large stores.
@@ -229,15 +225,10 @@ def _migrate_v2_to_v3(conn: sqlite3.Connection) -> None:
         """
     )
 
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_call_evaluations_call_id ON call_evaluations(call_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_call_evaluations_source ON call_evaluations(source)")
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_call_evaluations_call_id ON call_evaluations(call_id)"
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_call_evaluations_source ON call_evaluations(source)"
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_call_evaluations_evaluated_at "
-        "ON call_evaluations(evaluated_at)"
+        "CREATE INDEX IF NOT EXISTS idx_call_evaluations_evaluated_at ON call_evaluations(evaluated_at)"
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_call_evaluation_metrics_evaluation_id "
@@ -284,9 +275,5 @@ def _migrate_v3_to_v4(conn: sqlite3.Connection) -> None:
         """
     )
 
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_rag_chunks_document_id ON rag_chunks(document_id)"
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_rag_documents_ingested_at ON rag_documents(ingested_at)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_rag_chunks_document_id ON rag_chunks(document_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_rag_documents_ingested_at ON rag_documents(ingested_at)")

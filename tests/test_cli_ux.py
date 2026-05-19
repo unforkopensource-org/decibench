@@ -55,7 +55,7 @@ def test_models_preset_updates_config() -> None:
     runner = CliRunner()
     with runner.isolated_filesystem():
         Path("decibench.toml").write_text(
-            "[project]\nname = \"demo\"\n\n[target]\ndefault = \"demo\"\n",
+            '[project]\nname = "demo"\n\n[target]\ndefault = "demo"\n',
             encoding="utf-8",
         )
         result = runner.invoke(main, ["models", "preset", "openai", "balanced"])

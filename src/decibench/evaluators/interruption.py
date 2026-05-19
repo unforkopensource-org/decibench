@@ -74,32 +74,36 @@ class InterruptionEvaluator(BaseEvaluator):
             repetition_score=repetition_score,
         )
 
-        results.append(MetricResult(
-            name="interruption_recovery",
-            value=round(recovery_score, 1),
-            unit="%",
-            passed=recovery_score >= 50.0,
-            threshold=50.0,
-            details={
-                "interruption_count": interruption_count,
-                "overlap_ms": round(overlap_ms, 1),
-                "recovery_ms": round(recovery_ms, 1),
-                "repetition_score": round(repetition_score, 1),
-            },
-        ))
+        results.append(
+            MetricResult(
+                name="interruption_recovery",
+                value=round(recovery_score, 1),
+                unit="%",
+                passed=recovery_score >= 50.0,
+                threshold=50.0,
+                details={
+                    "interruption_count": interruption_count,
+                    "overlap_ms": round(overlap_ms, 1),
+                    "recovery_ms": round(recovery_ms, 1),
+                    "repetition_score": round(repetition_score, 1),
+                },
+            )
+        )
 
         # Barge-in handling: does the agent stop when interrupted?
         barge_in_score = self._evaluate_barge_in(events, overlap_ms)
-        results.append(MetricResult(
-            name="barge_in_handling",
-            value=round(barge_in_score, 1),
-            unit="%",
-            passed=barge_in_score >= 50.0,
-            threshold=50.0,
-            details={
-                "overlap_ms": round(overlap_ms, 1),
-            },
-        ))
+        results.append(
+            MetricResult(
+                name="barge_in_handling",
+                value=round(barge_in_score, 1),
+                unit="%",
+                passed=barge_in_score >= 50.0,
+                threshold=50.0,
+                details={
+                    "overlap_ms": round(overlap_ms, 1),
+                },
+            )
+        )
 
         return results
 
@@ -118,14 +122,9 @@ class InterruptionEvaluator(BaseEvaluator):
         events = summary.events
 
         # Check if we have real caller audio timing
-        caller_end_times = [
-            e.timestamp_ms for e in events
-            if e.type == EventType.CALLER_AUDIO_END
-        ]
+        caller_end_times = [e.timestamp_ms for e in events if e.type == EventType.CALLER_AUDIO_END]
 
-        interruption_times = [
-            e.timestamp_ms for e in events if e.type == EventType.INTERRUPTION
-        ]
+        interruption_times = [e.timestamp_ms for e in events if e.type == EventType.INTERRUPTION]
         if not interruption_times:
             return 0.0
 
@@ -144,9 +143,9 @@ class InterruptionEvaluator(BaseEvaluator):
                 # Agent audio between interruption and caller speech end
                 # is true double-talk
                 overlapping = [
-                    e for e in events
-                    if e.type == EventType.AGENT_AUDIO
-                    and int_time <= e.timestamp_ms <= caller_end + 500
+                    e
+                    for e in events
+                    if e.type == EventType.AGENT_AUDIO and int_time <= e.timestamp_ms <= caller_end + 500
                 ]
                 if len(overlapping) >= 2:
                     span = overlapping[-1].timestamp_ms - overlapping[0].timestamp_ms
@@ -162,9 +161,9 @@ class InterruptionEvaluator(BaseEvaluator):
             # Mode 2: Fallback — no caller timing, use interruption signal
             for int_time in interruption_times:
                 post_int_audio = [
-                    e for e in events
-                    if e.type == EventType.AGENT_AUDIO
-                    and int_time < e.timestamp_ms < int_time + 3000
+                    e
+                    for e in events
+                    if e.type == EventType.AGENT_AUDIO and int_time < e.timestamp_ms < int_time + 3000
                 ]
                 if len(post_int_audio) >= 2:
                     first_ts = post_int_audio[0].timestamp_ms
@@ -198,9 +197,7 @@ class InterruptionEvaluator(BaseEvaluator):
                         EventType.AGENT_AUDIO,
                         EventType.AGENT_TRANSCRIPT,
                     ):
-                        recovery_times.append(
-                            next_event.timestamp_ms - interrupt_time
-                        )
+                        recovery_times.append(next_event.timestamp_ms - interrupt_time)
                         break
 
         if not recovery_times:
@@ -232,9 +229,7 @@ class InterruptionEvaluator(BaseEvaluator):
             words_curr = set(texts[i].split())
             if not words_prev or not words_curr:
                 continue
-            overlap = len(words_prev & words_curr) / max(
-                len(words_prev), len(words_curr)
-            )
+            overlap = len(words_prev & words_curr) / max(len(words_prev), len(words_curr))
             if overlap > 0.7:
                 repetitions += 1
 
@@ -262,11 +257,7 @@ class InterruptionEvaluator(BaseEvaluator):
         overlap_penalty = min(40, overlap_ms / 100 * 5)
 
         # Combine: 40% recovery time, 30% repetition, 30% overlap
-        combined = (
-            recovery_score * 0.4
-            + repetition_score * 0.3
-            + max(0, 100 - overlap_penalty) * 0.3
-        )
+        combined = recovery_score * 0.4 + repetition_score * 0.3 + max(0, 100 - overlap_penalty) * 0.3
         return max(0.0, min(100.0, combined))
 
     @staticmethod

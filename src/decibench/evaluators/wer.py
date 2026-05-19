@@ -48,14 +48,16 @@ class WEREvaluator(BaseEvaluator):
 
         agent_text = transcript.text.strip()
         if not agent_text:
-            results.append(MetricResult(
-                name="wer",
-                value=100.0,
-                unit="%",
-                passed=False,
-                threshold=context.get("wer_threshold", 10.0),
-                details={"reason": "No agent response transcribed"},
-            ))
+            results.append(
+                MetricResult(
+                    name="wer",
+                    value=100.0,
+                    unit="%",
+                    passed=False,
+                    threshold=context.get("wer_threshold", 10.0),
+                    details={"reason": "No agent response transcribed"},
+                )
+            )
             return results
 
         language = transcript.language
@@ -73,52 +75,60 @@ class WEREvaluator(BaseEvaluator):
             if language in _CJK_LANGUAGES:
                 cer_result = self._calculate_cer(reference_texts, agent_text)
                 threshold = context.get("cer_threshold", 3.0)
-                results.append(MetricResult(
-                    name="cer",
-                    value=round(cer_result["error_rate"], 2),
-                    unit="%",
-                    passed=cer_result["error_rate"] <= threshold,
-                    threshold=threshold,
-                    details={
-                        "hits": cer_result["hits"],
-                        "substitutions": cer_result["substitutions"],
-                        "deletions": cer_result["deletions"],
-                        "insertions": cer_result["insertions"],
-                        "language": language,
-                    },
-                ))
+                results.append(
+                    MetricResult(
+                        name="cer",
+                        value=round(cer_result["error_rate"], 2),
+                        unit="%",
+                        passed=cer_result["error_rate"] <= threshold,
+                        threshold=threshold,
+                        details={
+                            "hits": cer_result["hits"],
+                            "substitutions": cer_result["substitutions"],
+                            "deletions": cer_result["deletions"],
+                            "insertions": cer_result["insertions"],
+                            "language": language,
+                        },
+                    )
+                )
             else:
                 wer_result = self._calculate_weighted_wer(
-                    reference_texts, agent_text, critical_keywords,
+                    reference_texts,
+                    agent_text,
+                    critical_keywords,
                 )
                 threshold = context.get("wer_threshold", 10.0)
-                results.append(MetricResult(
-                    name="wer",
-                    value=round(wer_result["standard_wer"], 2),
-                    unit="%",
-                    passed=wer_result["standard_wer"] <= threshold,
-                    threshold=threshold,
-                    details={
-                        "weighted_wer": round(wer_result["weighted_wer"], 2),
-                        "hits": wer_result["hits"],
-                        "substitutions": wer_result["substitutions"],
-                        "deletions": wer_result["deletions"],
-                        "insertions": wer_result["insertions"],
-                        "critical_misses": wer_result["critical_misses"],
-                        "language": language,
-                    },
-                ))
+                results.append(
+                    MetricResult(
+                        name="wer",
+                        value=round(wer_result["standard_wer"], 2),
+                        unit="%",
+                        passed=wer_result["standard_wer"] <= threshold,
+                        threshold=threshold,
+                        details={
+                            "weighted_wer": round(wer_result["weighted_wer"], 2),
+                            "hits": wer_result["hits"],
+                            "substitutions": wer_result["substitutions"],
+                            "deletions": wer_result["deletions"],
+                            "insertions": wer_result["insertions"],
+                            "critical_misses": wer_result["critical_misses"],
+                            "language": language,
+                        },
+                    )
+                )
 
                 # If weighted WER is significantly worse, flag it
                 if wer_result["critical_misses"]:
-                    results.append(MetricResult(
-                        name="critical_word_misses",
-                        value=float(len(wer_result["critical_misses"])),
-                        unit="count",
-                        passed=len(wer_result["critical_misses"]) == 0,
-                        threshold=0.0,
-                        details={"missed_words": wer_result["critical_misses"]},
-                    ))
+                    results.append(
+                        MetricResult(
+                            name="critical_word_misses",
+                            value=float(len(wer_result["critical_misses"])),
+                            unit="count",
+                            passed=len(wer_result["critical_misses"]) == 0,
+                            threshold=0.0,
+                            details={"missed_words": wer_result["critical_misses"]},
+                        )
+                    )
 
         return results
 
@@ -132,17 +142,19 @@ class WEREvaluator(BaseEvaluator):
         """
         import jiwer
 
-        return jiwer.Compose([
-            jiwer.ToLowerCase(),
-            jiwer.ExpandCommonEnglishContractions(),
-            jiwer.RemoveWhiteSpace(replace_by_space=True),
-            jiwer.RemoveMultipleSpaces(),
-            jiwer.Strip(),
-            jiwer.RemovePunctuation(),  # type: ignore[no-untyped-call]
-            jiwer.RemoveMultipleSpaces(),
-            jiwer.Strip(),
-            jiwer.ReduceToListOfListOfWords(),
-        ])
+        return jiwer.Compose(
+            [
+                jiwer.ToLowerCase(),
+                jiwer.ExpandCommonEnglishContractions(),
+                jiwer.RemoveWhiteSpace(replace_by_space=True),
+                jiwer.RemoveMultipleSpaces(),
+                jiwer.Strip(),
+                jiwer.RemovePunctuation(),  # type: ignore[no-untyped-call]
+                jiwer.RemoveMultipleSpaces(),
+                jiwer.Strip(),
+                jiwer.ReduceToListOfListOfWords(),
+            ]
+        )
 
     @staticmethod
     def _calculate_weighted_wer(
@@ -190,7 +202,7 @@ class WEREvaluator(BaseEvaluator):
                             continue  # No error
 
                         # Get the reference words involved in this error
-                        error_words = ref_words[chunk.ref_start_idx:chunk.ref_end_idx]
+                        error_words = ref_words[chunk.ref_start_idx : chunk.ref_end_idx]
 
                         for word in error_words:
                             if word.lower() in critical_kw_lower:
@@ -204,11 +216,7 @@ class WEREvaluator(BaseEvaluator):
                             ins_count = chunk.hyp_end_idx - chunk.hyp_start_idx
                             weighted_error_sum += ins_count * _DEFAULT_WORD_WEIGHT
 
-                weighted_wer = (
-                    (weighted_error_sum / total_ref_words * 100)
-                    if total_ref_words > 0
-                    else 0.0
-                )
+                weighted_wer = (weighted_error_sum / total_ref_words * 100) if total_ref_words > 0 else 0.0
 
                 best_result = {
                     "standard_wer": best_wer,
@@ -306,10 +314,9 @@ class WEREvaluator(BaseEvaluator):
         results: list[MetricResult] = []
 
         # Build per-turn agent text from segments if available
-        agent_segments = [
-            seg.text.lower() for seg in transcript.segments
-            if seg.text
-        ] if transcript.segments else []
+        agent_segments = (
+            [seg.text.lower() for seg in transcript.segments if seg.text] if transcript.segments else []
+        )
 
         full_text_lower = transcript.text.lower()
 
@@ -327,43 +334,41 @@ class WEREvaluator(BaseEvaluator):
 
             # must_include check
             if turn.expect.must_include:
-                missing = [
-                    kw for kw in turn.expect.must_include
-                    if kw.lower() not in check_text
-                ]
+                missing = [kw for kw in turn.expect.must_include if kw.lower() not in check_text]
                 total = len(turn.expect.must_include)
-                results.append(MetricResult(
-                    name=f"keyword_presence_t{agent_turn_idx}",
-                    value=round((1 - len(missing) / total) * 100, 1),
-                    unit="%",
-                    passed=len(missing) == 0,
-                    threshold=100.0,
-                    details={
-                        "turn_index": agent_turn_idx,
-                        "required": turn.expect.must_include,
-                        "missing": missing,
-                    },
-                ))
+                results.append(
+                    MetricResult(
+                        name=f"keyword_presence_t{agent_turn_idx}",
+                        value=round((1 - len(missing) / total) * 100, 1),
+                        unit="%",
+                        passed=len(missing) == 0,
+                        threshold=100.0,
+                        details={
+                            "turn_index": agent_turn_idx,
+                            "required": turn.expect.must_include,
+                            "missing": missing,
+                        },
+                    )
+                )
 
             # must_not_say check
             if turn.expect.must_not_say:
-                found = [
-                    kw for kw in turn.expect.must_not_say
-                    if kw.lower() in check_text
-                ]
+                found = [kw for kw in turn.expect.must_not_say if kw.lower() in check_text]
                 total = len(turn.expect.must_not_say)
-                results.append(MetricResult(
-                    name=f"keyword_absence_t{agent_turn_idx}",
-                    value=round((1 - len(found) / total) * 100, 1),
-                    unit="%",
-                    passed=len(found) == 0,
-                    threshold=100.0,
-                    details={
-                        "turn_index": agent_turn_idx,
-                        "forbidden": turn.expect.must_not_say,
-                        "found": found,
-                    },
-                ))
+                results.append(
+                    MetricResult(
+                        name=f"keyword_absence_t{agent_turn_idx}",
+                        value=round((1 - len(found) / total) * 100, 1),
+                        unit="%",
+                        passed=len(found) == 0,
+                        threshold=100.0,
+                        details={
+                            "turn_index": agent_turn_idx,
+                            "forbidden": turn.expect.must_not_say,
+                            "found": found,
+                        },
+                    )
+                )
 
             agent_turn_idx += 1
 

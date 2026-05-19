@@ -59,6 +59,7 @@ class AudioSynthesizer:
         if not voice:
             # Try to resolve from accent using edge-tts defaults
             from decibench.providers.tts.edge import EdgeTTSProvider
+
             voice = EdgeTTSProvider.resolve_voice(persona.accent)
 
         audio = await self._tts.synthesize(
@@ -76,10 +77,7 @@ class AudioSynthesizer:
             )
 
         # 3. Transcode to connector's required format
-        if (
-            audio.sample_rate != target_sample_rate
-            or audio.encoding != target_encoding
-        ):
+        if audio.sample_rate != target_sample_rate or audio.encoding != target_encoding:
             audio = transcode(audio, target_sample_rate, target_encoding)
 
         return audio

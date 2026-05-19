@@ -1,4 +1,3 @@
-
 import pytest
 
 from decibench.config import DecibenchConfig
@@ -20,7 +19,7 @@ async def test_evaluate_imported_call():
         transcript=[
             TranscriptSegment(role="caller", text="What is the weather?", start_ms=0, end_ms=100),
             TranscriptSegment(role="agent", text="It is 75 degrees.", start_ms=150, end_ms=250),
-        ]
+        ],
     )
 
     config = DecibenchConfig()

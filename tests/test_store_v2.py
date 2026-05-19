@@ -16,17 +16,12 @@ def test_redaction_policy():
     assert redactor.redact_text("Card 4111-1111-1111-1111") == "Card [REDACTED_CARD]"
 
     # Dict redaction
-    data = {
-        "user": {
-            "phone": "555-123-4567",
-            "notes": ["sent to test@example.com"]
-        },
-        "id": 123
-    }
+    data = {"user": {"phone": "555-123-4567", "notes": ["sent to test@example.com"]}, "id": 123}
     redacted = redactor.redact_dict(data)
     assert redacted["user"]["phone"] == "[REDACTED_PHONE]"
     assert redacted["user"]["notes"][0] == "sent to [REDACTED_EMAIL]"
     assert redacted["id"] == 123
+
 
 def test_store_v2_initialization(tmp_path: Path):
     store = RunStore(tmp_path / "decibench.sqlite")
@@ -50,6 +45,7 @@ def test_store_v2_initialization(tmp_path: Path):
         assert "call_evaluations" in table_names
         assert "call_evaluation_metrics" in table_names
 
+
 def test_store_v2_save_call_trace(tmp_path: Path):
     store = RunStore(tmp_path / "decibench.sqlite")
 
@@ -62,7 +58,7 @@ def test_store_v2_save_call_trace(tmp_path: Path):
         ],
         transcript=[
             TranscriptSegment(role="caller", text="My number is 555-123-4567", start_ms=0, end_ms=100)
-        ]
+        ],
     )
 
     store.save_call_trace(trace)

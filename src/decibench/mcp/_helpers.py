@@ -57,7 +57,10 @@ def preflight_check(target: str, mode: str, config: DecibenchConfig) -> dict[str
     # 1. Target check
     if target in ("retell", "vapi"):
         import os
-        if not os.environ.get(f"{target.upper()}_API_KEY") and not getattr(config.auth, f"{target}_api_key", None):
+
+        if not os.environ.get(f"{target.upper()}_API_KEY") and not getattr(
+            config.auth, f"{target}_api_key", None
+        ):
             ok = False
             findings.append(f"Missing {target.title()} API key.")
             actions.append(f"Set {target.upper()}_API_KEY or configure in decibench.toml [auth]")
@@ -67,21 +70,20 @@ def preflight_check(target: str, mode: str, config: DecibenchConfig) -> dict[str
         if not config.has_judge:
             ok = False
             findings.append("Semantic evaluation requires an LLM judge.")
-            actions.append("Run `decibench models preset ollama balanced` (local) or configure OpenAI/Anthropic.")
+            actions.append(
+                "Run `decibench models preset ollama balanced` (local) or configure OpenAI/Anthropic."
+            )
 
     # 3. RAG check
     if mode == "semantic-rag":
         from decibench.rag import RagStore
+
         if RagStore().chunk_count() == 0:
             ok = False
             findings.append("Corpus is empty.")
             actions.append("Run `decibench rag ingest <files>` to populate knowledge corpus.")
 
-    return {
-        "ok": ok,
-        "findings": findings,
-        "suggested_actions": actions
-    }
+    return {"ok": ok, "findings": findings, "suggested_actions": actions}
 
 
 def format_run_result_rich(result: SuiteResult, run_id: str) -> dict[str, Any]:

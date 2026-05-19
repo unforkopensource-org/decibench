@@ -44,13 +44,15 @@ class LatencyEvaluator(BaseEvaluator):
         if ttfw is not None:
             bands = context.get("latency_bands")
             ttfw_max = bands.ttfw[1] if bands is not None else context.get("ttfw_max_ms", 800)
-            results.append(MetricResult(
-                name="ttfw_ms",
-                value=round(ttfw, 1),
-                unit="ms",
-                passed=ttfw < ttfw_max,
-                threshold=ttfw_max,
-            ))
+            results.append(
+                MetricResult(
+                    name="ttfw_ms",
+                    value=round(ttfw, 1),
+                    unit="ms",
+                    passed=ttfw < ttfw_max,
+                    threshold=ttfw_max,
+                )
+            )
 
         # --- Turn latency percentiles ---
         turn_latencies = self._calculate_turn_latencies(events)
@@ -80,64 +82,78 @@ class LatencyEvaluator(BaseEvaluator):
             # aggregator in decibench.evaluators.aggregate can compute true
             # percentiles over the merged distribution (rather than averaging
             # per-scenario percentiles, which is statistically meaningless).
-            results.append(MetricResult(
-                name="turn_latency_p50_ms",
-                value=round(p50, 1),
-                unit="ms",
-                passed=p50 <= p50_max,
-                threshold=p50_max,
-                details={"raw_samples": list(turn_latencies)},
-            ))
-            results.append(MetricResult(
-                name="turn_latency_p95_ms",
-                value=round(p95, 1),
-                unit="ms",
-                passed=p95 <= p95_max,
-                threshold=p95_max,
-            ))
-            results.append(MetricResult(
-                name="turn_latency_p99_ms",
-                value=round(p99, 1),
-                unit="ms",
-                passed=p99 <= p99_max,
-                threshold=p99_max,
-            ))
+            results.append(
+                MetricResult(
+                    name="turn_latency_p50_ms",
+                    value=round(p50, 1),
+                    unit="ms",
+                    passed=p50 <= p50_max,
+                    threshold=p50_max,
+                    details={"raw_samples": list(turn_latencies)},
+                )
+            )
+            results.append(
+                MetricResult(
+                    name="turn_latency_p95_ms",
+                    value=round(p95, 1),
+                    unit="ms",
+                    passed=p95 <= p95_max,
+                    threshold=p95_max,
+                )
+            )
+            results.append(
+                MetricResult(
+                    name="turn_latency_p99_ms",
+                    value=round(p99, 1),
+                    unit="ms",
+                    passed=p99 <= p99_max,
+                    threshold=p99_max,
+                )
+            )
 
             # Average response gap — sweet spot is 200-1500ms
             avg_gap = statistics.mean(turn_latencies)
             gap_max = context.get("response_gap_max_ms", 1500)
-            results.append(MetricResult(
-                name="response_gap_avg_ms",
-                value=round(avg_gap, 1),
-                unit="ms",
-                passed=avg_gap <= gap_max,
-                threshold=gap_max,
-                details={"target_range": f"<{gap_max}ms"},
-            ))
+            results.append(
+                MetricResult(
+                    name="response_gap_avg_ms",
+                    value=round(avg_gap, 1),
+                    unit="ms",
+                    passed=avg_gap <= gap_max,
+                    threshold=gap_max,
+                    details={"target_range": f"<{gap_max}ms"},
+                )
+            )
 
         # --- Internal latency (if platform provides it) ---
         meta = summary.platform_metadata
         if "stt_latency" in meta:
-            results.append(MetricResult(
-                name="stt_latency_ms",
-                value=float(meta["stt_latency"]),
-                unit="ms",
-                passed=True,
-            ))
+            results.append(
+                MetricResult(
+                    name="stt_latency_ms",
+                    value=float(meta["stt_latency"]),
+                    unit="ms",
+                    passed=True,
+                )
+            )
         if "llm_ttft" in meta:
-            results.append(MetricResult(
-                name="llm_ttft_ms",
-                value=float(meta["llm_ttft"]),
-                unit="ms",
-                passed=True,
-            ))
+            results.append(
+                MetricResult(
+                    name="llm_ttft_ms",
+                    value=float(meta["llm_ttft"]),
+                    unit="ms",
+                    passed=True,
+                )
+            )
         if "tts_ttfb" in meta:
-            results.append(MetricResult(
-                name="tts_ttfb_ms",
-                value=float(meta["tts_ttfb"]),
-                unit="ms",
-                passed=True,
-            ))
+            results.append(
+                MetricResult(
+                    name="tts_ttfb_ms",
+                    value=float(meta["tts_ttfb"]),
+                    unit="ms",
+                    passed=True,
+                )
+            )
 
         return results
 
@@ -168,10 +184,7 @@ class LatencyEvaluator(BaseEvaluator):
         # Priority 2: First caller TURN_END
         if anchor_ms == 0.0:
             for event in events:
-                if (
-                    event.type == EventType.TURN_END
-                    and event.data.get("role") == "caller"
-                ):
+                if event.type == EventType.TURN_END and event.data.get("role") == "caller":
                     anchor_ms = event.timestamp_ms
                     break
 

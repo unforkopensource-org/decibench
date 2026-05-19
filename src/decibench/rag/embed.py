@@ -211,7 +211,9 @@ class OpenAICompatEmbedder:
 DEFAULT_EMBEDDER_URI = "embed://local/all-MiniLM-L6-v2"
 
 
-def get_embedder(uri: str = DEFAULT_EMBEDDER_URI, *, allow_cloud: bool = False, api_key: str = "") -> Embedder:
+def get_embedder(
+    uri: str = DEFAULT_EMBEDDER_URI, *, allow_cloud: bool = False, api_key: str = ""
+) -> Embedder:
     """Resolve an embedder URI to a concrete provider.
 
     URI schemes:
@@ -222,7 +224,7 @@ def get_embedder(uri: str = DEFAULT_EMBEDDER_URI, *, allow_cloud: bool = False, 
     """
     if not uri.startswith("embed://"):
         raise ValueError(f"Embedder URI must start with embed://, got {uri!r}")
-    rest = uri[len("embed://"):]
+    rest = uri[len("embed://") :]
     scheme, _, tail = rest.partition("/")
 
     if scheme == "local":
@@ -243,7 +245,7 @@ def get_embedder(uri: str = DEFAULT_EMBEDDER_URI, *, allow_cloud: bool = False, 
         if query:
             for kv in query.split("&"):
                 if kv.startswith("base="):
-                    base_url = kv[len("base="):]
+                    base_url = kv[len("base=") :]
         if not base_url:
             base_url = "https://api.openai.com/v1"
         return OpenAICompatEmbedder(

@@ -72,32 +72,31 @@ class SilenceEvaluator(BaseEvaluator):
                 )
 
                 total_silence_ms = sum(end - start for start, end in silences)
-                silence_pct = (
-                    (total_silence_ms / total_duration_ms) * 100
-                    if total_duration_ms > 0
-                    else 0
-                )
+                silence_pct = (total_silence_ms / total_duration_ms) * 100 if total_duration_ms > 0 else 0
                 threshold = context.get("max_silence_pct", 5.0)
 
-                results.append(MetricResult(
-                    name="silence_segments",
-                    value=float(len(silences)),
-                    unit="count",
-                    passed=True,
-                    details={
-                        "segments": [
-                            {"start_ms": round(s, 1), "end_ms": round(e, 1)}
-                            for s, e in silences
-                        ]
-                    },
-                ))
-                results.append(MetricResult(
-                    name="silence_pct",
-                    value=round(silence_pct, 1),
-                    unit="%",
-                    passed=silence_pct <= threshold,
-                    threshold=threshold,
-                ))
+                results.append(
+                    MetricResult(
+                        name="silence_segments",
+                        value=float(len(silences)),
+                        unit="count",
+                        passed=True,
+                        details={
+                            "segments": [
+                                {"start_ms": round(s, 1), "end_ms": round(e, 1)} for s, e in silences
+                            ]
+                        },
+                    )
+                )
+                results.append(
+                    MetricResult(
+                        name="silence_pct",
+                        value=round(silence_pct, 1),
+                        unit="%",
+                        passed=silence_pct <= threshold,
+                        threshold=threshold,
+                    )
+                )
 
         return results
 
@@ -120,15 +119,11 @@ class SilenceEvaluator(BaseEvaluator):
         gaps: list[float] = []
 
         # Look for CALLER_AUDIO_END events first (most accurate)
-        caller_ends = [
-            e for e in events if e.type == EventType.CALLER_AUDIO_END
-        ]
+        caller_ends = [e for e in events if e.type == EventType.CALLER_AUDIO_END]
         # Fallback to TURN_END events
         if not caller_ends:
             caller_ends = [
-                e for e in events
-                if e.type == EventType.TURN_END
-                and e.data.get("role") == "caller"
+                e for e in events if e.type == EventType.TURN_END and e.data.get("role") == "caller"
             ]
 
         for ce in caller_ends:

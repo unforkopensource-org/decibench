@@ -25,8 +25,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test --import tsx test/"
+    "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "playwright": "^1.49.0",

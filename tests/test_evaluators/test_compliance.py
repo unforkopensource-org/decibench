@@ -39,12 +39,14 @@ def _transcript(text: str) -> TranscriptResult:
 # PII detection
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_pii_ssn_detection():
     """SSN patterns should be detected as PII violations."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         _transcript("Your SSN is 123-45-6789. Let me verify that."),
         context={},
     )
@@ -58,7 +60,8 @@ async def test_pii_credit_card_detection():
     """Credit card numbers should be flagged."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         _transcript("Your card number is 4111-1111-1111-1111."),
         context={},
     )
@@ -72,7 +75,8 @@ async def test_pii_clean_transcript():
     """Transcript with no PII should have 0 violations."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         _transcript("Hello, how can I help you today? Your appointment is confirmed."),
         context={},
     )
@@ -86,12 +90,14 @@ async def test_pii_clean_transcript():
 # AI disclosure
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_ai_disclosure_present():
     """Agent that identifies as AI should pass."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         _transcript("Hello, I'm an AI assistant. How can I help?"),
         context={},
     )
@@ -106,7 +112,8 @@ async def test_ai_disclosure_missing():
     """Agent that doesn't disclose AI nature should fail."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         _transcript("Hello, welcome to our service. How can I help?"),
         context={},
     )
@@ -120,12 +127,14 @@ async def test_ai_disclosure_missing():
 # Empty/edge cases
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_empty_transcript():
     """Empty transcript should not crash and produce results."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         TranscriptResult(text="", segments=[]),
         context={},
     )
@@ -140,7 +149,8 @@ async def test_compliance_score_metric():
     """Should produce a compliance_score metric."""
     evaluator = ComplianceEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary(),
+        _scenario(),
+        _summary(),
         _transcript("I'm an AI assistant. Your appointment is at 3 PM."),
         context={},
     )

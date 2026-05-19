@@ -38,7 +38,7 @@ class GateReport:
     schema_ok: bool = False
     grounding_ok: bool = False
     safety_ok: bool = False
-    grounding_score: float = 0.0     # fraction of facts grounded (0-1)
+    grounding_score: float = 0.0  # fraction of facts grounded (0-1)
     grounding_evidence: dict[str, list[str]] = field(default_factory=dict)
     failures: list[str] = field(default_factory=list)
 
@@ -67,11 +67,13 @@ def _extract_facts(text: str) -> list[str]:
     facts += re.findall(
         r"\b(?:January|February|March|April|May|June|July|August|"
         r"September|October|November|December)\s+\d{1,2}\b",
-        text, re.IGNORECASE,
+        text,
+        re.IGNORECASE,
     )
     facts += re.findall(
         r"\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b",
-        text, re.IGNORECASE,
+        text,
+        re.IGNORECASE,
     )
     # Trim trivially small integers
     for n in re.findall(r"\b\d+(?:\.\d+)?\b", text):
@@ -97,9 +99,7 @@ def validate_scenario(
     # ------------------------------- Gate 1: schema
     try:
         scenario = (
-            scenario_json
-            if isinstance(scenario_json, Scenario)
-            else Scenario.model_validate(scenario_json)
+            scenario_json if isinstance(scenario_json, Scenario) else Scenario.model_validate(scenario_json)
         )
         report.schema_ok = True
     except Exception as exc:
@@ -107,11 +107,7 @@ def validate_scenario(
         return None, report
 
     # ------------------------------- Gate 2: grounding
-    caller_text = " ".join(
-        turn.text or ""
-        for turn in scenario.conversation
-        if turn.role == "caller"
-    )
+    caller_text = " ".join(turn.text or "" for turn in scenario.conversation if turn.role == "caller")
     facts = _extract_facts(caller_text)
     if not facts:
         # No factual claims in caller turns → trivially grounded.

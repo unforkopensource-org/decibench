@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class ImportedCallEvaluator:
     """Runs a suite of evaluators on an imported offline CallTrace.
 
@@ -123,9 +124,7 @@ class ImportedCallEvaluator:
 
         # 3. Aggregate failures
         failures = [
-            f"{m.name}: {m.value} (threshold: {m.threshold})"
-            for m in all_metrics.values()
-            if not m.passed
+            f"{m.name}: {m.value} (threshold: {m.threshold})" for m in all_metrics.values() if not m.passed
         ]
         passed = len(failures) == 0
 

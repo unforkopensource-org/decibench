@@ -5,12 +5,14 @@ from __future__ import annotations
 
 def test_mcp_instance_exists():
     from decibench.mcp import mcp
+
     assert mcp is not None
     assert mcp.name == "Decibench"
 
 
 def test_mcp_server_has_instructions():
     from decibench.mcp.server import mcp
+
     assert "voice agent" in mcp.instructions.lower()
 
 

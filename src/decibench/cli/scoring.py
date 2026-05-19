@@ -81,7 +81,15 @@ def scoring_set_weight(assignments: tuple[str, ...]) -> None:
             val = float(val_str.strip())
         except ValueError:
             raise click.BadParameter(f"Invalid weight value: {val_str}")  # noqa: B904
-        valid_cats = {"task_completion", "latency", "audio_quality", "conversation", "robustness", "interruption", "compliance"}
+        valid_cats = {
+            "task_completion",
+            "latency",
+            "audio_quality",
+            "conversation",
+            "robustness",
+            "interruption",
+            "compliance",
+        }
         if key not in valid_cats:
             raise click.BadParameter(f"Unknown category: {key}. Valid: {', '.join(sorted(valid_cats))}")
         updates[key] = val

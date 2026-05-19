@@ -51,11 +51,7 @@ def format_junit_xml(result: SuiteResult) -> str:
         if not eval_res.passed:
             # Join all failure categories and strings
             fail_msg = "\n".join(eval_res.failures)
-            fail_type = (
-                ", ".join(eval_res.failure_summary)
-                if eval_res.failure_summary
-                else "assertion_error"
-            )
+            fail_type = ", ".join(eval_res.failure_summary) if eval_res.failure_summary else "assertion_error"
 
             failure = ET.SubElement(
                 testcase,

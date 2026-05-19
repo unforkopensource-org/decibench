@@ -52,11 +52,11 @@ class NoiseMixer:
         noise = self._get_noise(profile, len(signal), audio.sample_rate)
 
         # Calculate scaling factor for target SNR
-        signal_power = np.mean(signal ** 2)
+        signal_power = np.mean(signal**2)
         if signal_power < 1e-10:
             return audio
 
-        noise_power = np.mean(noise ** 2)
+        noise_power = np.mean(noise**2)
         if noise_power < 1e-10:
             return audio
 
@@ -121,6 +121,7 @@ class NoiseMixer:
             chatter = rng.normal(0, 1500, num_samples)
             # Low-pass filter approximation for chatter
             from scipy.signal import butter, sosfilt
+
             try:
                 sos = butter(4, 2000, btype="low", fs=sample_rate, output="sos")
                 chatter = sosfilt(sos, chatter)
@@ -167,6 +168,7 @@ class NoiseMixer:
         # Resample if needed
         if sr != target_sr:
             import librosa
+
             audio = librosa.resample(audio, orig_sr=sr, target_sr=target_sr)
 
         # Scale to int16 range

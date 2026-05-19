@@ -125,6 +125,7 @@ async def _mp3_to_pcm(mp3_data: bytes, target_sr: int = 16000) -> bytes:
     except RuntimeError:
         # Fallback: try with librosa if soundfile can't handle MP3
         import librosa
+
         buf.seek(0)
         audio_array, sr = librosa.load(buf, sr=target_sr, mono=True)
 
@@ -135,6 +136,7 @@ async def _mp3_to_pcm(mp3_data: bytes, target_sr: int = 16000) -> bytes:
     # Resample if needed
     if sr != target_sr:
         import librosa
+
         audio_array = librosa.resample(audio_array, orig_sr=sr, target_sr=target_sr)
 
     # Convert to 16-bit PCM

@@ -83,7 +83,9 @@ async def evaluate_call(call_id: str, mode: str = "deterministic") -> str:
     # relying on the trace itself for basic metrics like latency.
     # In a real use case, users would match traces to scenarios, but
     # for exploration, this runs the baseline metrics.
-    dummy_scenario = Scenario(id="imported-trace", description="Evaluation of imported trace", mode="scripted", version=1)
+    dummy_scenario = Scenario(
+        id="imported-trace", description="Evaluation of imported trace", mode="scripted", version=1
+    )
 
     result = await evaluate_trace(trace, dummy_scenario, config)
     eval_id = store.save_call_evaluation(trace, result)

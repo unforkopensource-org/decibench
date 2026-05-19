@@ -95,24 +95,29 @@ class HTTPConnector(BaseConnector):
                 # Audio might be base64-encoded in JSON
                 if "audio" in data:
                     import base64
+
                     self._response_audio = base64.b64decode(data["audio"])
             else:
                 self._response_audio = response.content
 
             # Create events from response
             if self._response_audio:
-                self._events.append(AgentEvent(
-                    type=EventType.AGENT_AUDIO,
-                    timestamp_ms=latency_ms,
-                    audio=self._response_audio,
-                ))
+                self._events.append(
+                    AgentEvent(
+                        type=EventType.AGENT_AUDIO,
+                        timestamp_ms=latency_ms,
+                        audio=self._response_audio,
+                    )
+                )
 
             if self._response_metadata:
-                self._events.append(AgentEvent(
-                    type=EventType.METADATA,
-                    timestamp_ms=latency_ms,
-                    data=self._response_metadata,
-                ))
+                self._events.append(
+                    AgentEvent(
+                        type=EventType.METADATA,
+                        timestamp_ms=latency_ms,
+                        data=self._response_metadata,
+                    )
+                )
 
     async def receive_events(self, handle: ConnectionHandle) -> AsyncIterator[AgentEvent]:
         for event in self._events:

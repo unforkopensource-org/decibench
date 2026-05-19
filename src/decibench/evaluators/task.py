@@ -45,25 +45,29 @@ class TaskCompletionEvaluator(BaseEvaluator):
         # --- Deterministic: check tool calls match expectations ---
         if has_tool_mocks:
             tool_score = self._check_tool_calls(scenario, summary)
-            results.append(MetricResult(
-                name="tool_call_correctness",
-                value=round(tool_score, 1),
-                unit="%",
-                passed=tool_score >= 95.0,
-                threshold=95.0,
-            ))
+            results.append(
+                MetricResult(
+                    name="tool_call_correctness",
+                    value=round(tool_score, 1),
+                    unit="%",
+                    passed=tool_score >= 95.0,
+                    threshold=95.0,
+                )
+            )
         else:
             tool_score = None
 
         # --- Deterministic: slot extraction accuracy ---
         if has_slots and slot_score is not None:
-            results.append(MetricResult(
-                name="slot_extraction_accuracy",
-                value=round(slot_score, 1),
-                unit="%",
-                passed=slot_score >= 90.0,
-                threshold=90.0,
-            ))
+            results.append(
+                MetricResult(
+                    name="slot_extraction_accuracy",
+                    value=round(slot_score, 1),
+                    unit="%",
+                    passed=slot_score >= 90.0,
+                    threshold=90.0,
+                )
+            )
 
         # --- Semantic: LLM judge for goal achievement ---
         judge = context.get("judge")
@@ -74,14 +78,16 @@ class TaskCompletionEvaluator(BaseEvaluator):
             if judge_result.reasoning:
                 task_details["judge_reasoning"] = judge_result.reasoning
                 task_details["judge_raw_output"] = judge_result.raw_output
-            results.append(MetricResult(
-                name="task_completion",
-                value=round(judge_score, 1),
-                unit="%",
-                passed=judge_score >= 90.0,
-                threshold=90.0,
-                details=task_details if task_details else None,
-            ))
+            results.append(
+                MetricResult(
+                    name="task_completion",
+                    value=round(judge_score, 1),
+                    unit="%",
+                    passed=judge_score >= 90.0,
+                    threshold=90.0,
+                    details=task_details if task_details else None,
+                )
+            )
         elif has_tool_mocks or has_slots:
             # Without judge but with deterministic signals: average them
             scores = []
@@ -90,14 +96,16 @@ class TaskCompletionEvaluator(BaseEvaluator):
             if slot_score is not None:
                 scores.append(slot_score)
             deterministic_score = sum(scores) / len(scores)
-            results.append(MetricResult(
-                name="task_completion",
-                value=round(deterministic_score, 1),
-                unit="%",
-                passed=deterministic_score >= 90.0,
-                threshold=90.0,
-                details={"method": "deterministic_only"},
-            ))
+            results.append(
+                MetricResult(
+                    name="task_completion",
+                    value=round(deterministic_score, 1),
+                    unit="%",
+                    passed=deterministic_score >= 90.0,
+                    threshold=90.0,
+                    details={"method": "deterministic_only"},
+                )
+            )
         # else: no mocks, no slots, no judge → return NO task_completion
         # metric.  The score calculator will exclude this category from
         # the weighted average instead of giving a free 100%.
@@ -111,10 +119,7 @@ class TaskCompletionEvaluator(BaseEvaluator):
             return 100.0  # No tools expected, so no failures
 
         expected_tools = {mock.name: mock for mock in scenario.tool_mocks}
-        actual_calls = [
-            e.data for e in summary.events
-            if e.type == EventType.TOOL_CALL
-        ]
+        actual_calls = [e.data for e in summary.events if e.type == EventType.TOOL_CALL]
 
         if not expected_tools:
             return 100.0
@@ -168,9 +173,9 @@ class TaskCompletionEvaluator(BaseEvaluator):
             return None
 
         # Build per-turn agent text from segments
-        agent_segments = [
-            seg.text.lower() for seg in transcript.segments if seg.text
-        ] if transcript.segments else []
+        agent_segments = (
+            [seg.text.lower() for seg in transcript.segments if seg.text] if transcript.segments else []
+        )
         full_text = transcript.text.lower()
 
         correct = 0
@@ -200,9 +205,7 @@ class TaskCompletionEvaluator(BaseEvaluator):
         criteria = [c.description or c.type for c in scenario.success_criteria]
 
         criteria_text = (
-            chr(10).join(f'- {c}' for c in criteria)
-            if criteria
-            else 'Task was completed successfully'
+            chr(10).join(f"- {c}" for c in criteria) if criteria else "Task was completed successfully"
         )
 
         prompt = f"""Evaluate whether the voice agent successfully completed the caller's task.
@@ -230,8 +233,11 @@ class TaskCompletionEvaluator(BaseEvaluator):
 
 Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "criterion-by-criterion assessment"}}"""
 
-        result = await judge.evaluate(prompt, {
-            "transcript": transcript.text,
-            "expected": goal,
-        })
+        result = await judge.evaluate(
+            prompt,
+            {
+                "transcript": transcript.text,
+                "expected": goal,
+            },
+        )
         return result

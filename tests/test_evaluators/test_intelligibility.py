@@ -55,8 +55,7 @@ def _transcript_with_confidence(
     duration_ms: float = 5000.0,
 ) -> TranscriptResult:
     segments = [
-        TranscriptSegment(role="agent", text=f"word{i}", confidence=c)
-        for i, c in enumerate(confidences)
+        TranscriptSegment(role="agent", text=f"word{i}", confidence=c) for i, c in enumerate(confidences)
     ]
     return TranscriptResult(
         text=" ".join(f"word{i}" for i in range(len(confidences))),
@@ -69,12 +68,14 @@ def _transcript_with_confidence(
 # No data -> empty results
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_no_audio_returns_empty():
     """No agent audio -> empty results."""
     evaluator = STOIEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary_no_audio(),
+        _scenario(),
+        _summary_no_audio(),
         TranscriptResult(text="Hello", segments=[]),
         context={},
     )
@@ -91,7 +92,8 @@ async def test_audio_but_no_segments_still_produces_metric():
     """
     evaluator = STOIEvaluator()
     results = await evaluator.evaluate(
-        _scenario(), _summary_with_audio(),
+        _scenario(),
+        _summary_with_audio(),
         TranscriptResult(text="Hello", segments=[]),
         context={},
     )
@@ -106,6 +108,7 @@ async def test_audio_but_no_segments_still_produces_metric():
 # ---------------------------------------------------------------------------
 # Multi-signal estimation
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_high_confidence_with_audio():
@@ -122,7 +125,8 @@ async def test_high_confidence_with_audio():
         duration_ms=4000.0,  # 10 words / 4s = 2.5 wps (normal)
     )
     results = await evaluator.evaluate(
-        _scenario(), _summary_with_audio(),
+        _scenario(),
+        _summary_with_audio(),
         transcript,
         context={},
     )
@@ -140,12 +144,14 @@ async def test_low_confidence_penalizes():
     """Low STT confidence should contribute negatively."""
     evaluator = STOIEvaluator()
     high_results = await evaluator.evaluate(
-        _scenario(), _summary_with_audio(),
+        _scenario(),
+        _summary_with_audio(),
         _transcript_with_confidence([0.95, 0.95, 0.95]),
         context={},
     )
     low_results = await evaluator.evaluate(
-        _scenario(), _summary_with_audio(),
+        _scenario(),
+        _summary_with_audio(),
         _transcript_with_confidence([0.1, 0.15, 0.1]),
         context={},
     )
@@ -155,6 +161,7 @@ async def test_low_confidence_penalizes():
 # ---------------------------------------------------------------------------
 # Static method tests -- multi-signal
 # ---------------------------------------------------------------------------
+
 
 def test_spectral_clarity_speech_tone():
     """A 440Hz tone should have some spectral clarity in speech band."""

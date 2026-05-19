@@ -34,11 +34,13 @@ def _scenario(tool_returns: dict | None = None, caller_text: str = "Hello") -> S
 def _summary(tool_result_data: dict | None = None) -> CallSummary:
     events = []
     if tool_result_data:
-        events.append(AgentEvent(
-            type=EventType.TOOL_RESULT,
-            timestamp_ms=100,
-            data=tool_result_data,
-        ))
+        events.append(
+            AgentEvent(
+                type=EventType.TOOL_RESULT,
+                timestamp_ms=100,
+                data=tool_result_data,
+            )
+        )
     return CallSummary(duration_ms=5000, turn_count=2, events=events)
 
 
@@ -52,6 +54,7 @@ def _transcript(text: str) -> TranscriptResult:
 # ---------------------------------------------------------------------------
 # Entity extraction (deterministic path)
 # ---------------------------------------------------------------------------
+
 
 def test_entity_extraction_grounded():
     """Entities from agent response that exist in grounding → no hallucination."""
@@ -141,6 +144,7 @@ def test_trivial_numbers_not_penalized():
 # Full evaluate() flow (deterministic, no judge)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_evaluate_no_transcript():
     """No transcript → skip with 0% hallucination."""
@@ -175,6 +179,7 @@ async def test_evaluate_deterministic_grounded():
 # ---------------------------------------------------------------------------
 # Grounding context collection
 # ---------------------------------------------------------------------------
+
 
 def test_collect_grounding_tool_results():
     """Tool results should appear in grounding context."""

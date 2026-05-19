@@ -163,12 +163,14 @@ class RunStore:
             with suppress(sqlite3.OperationalError):
                 conn.execute(
                     "DELETE FROM runs_metrics WHERE scenario_run_id IN "
-                    "(SELECT id FROM runs_scenarios WHERE run_id = ?)", (run_id,)
+                    "(SELECT id FROM runs_scenarios WHERE run_id = ?)",
+                    (run_id,),
                 )
             with suppress(sqlite3.OperationalError):
                 conn.execute(
                     "DELETE FROM runs_spans WHERE scenario_run_id IN "
-                    "(SELECT id FROM runs_scenarios WHERE run_id = ?)", (run_id,)
+                    "(SELECT id FROM runs_scenarios WHERE run_id = ?)",
+                    (run_id,),
                 )
             with suppress(sqlite3.OperationalError):
                 conn.execute("DELETE FROM runs_scenarios WHERE run_id = ?", (run_id,))
@@ -190,7 +192,7 @@ class RunStore:
                         er.duration_ms,
                         json.dumps(er.failures),
                         json.dumps(er.failure_summary),
-                    )
+                    ),
                 )
                 for _metric_name, m_res in er.metrics.items():
                     conn.execute(
@@ -553,9 +555,7 @@ class RunStore:
             "failed": int(totals_row["failed"] or 0),
             "passed": int(totals_row["passed"] or 0),
             "sources": {row["source"]: int(row["n"]) for row in source_rows},
-            "categories": dict(
-                sorted(category_counts.items(), key=lambda kv: kv[1], reverse=True)
-            ),
+            "categories": dict(sorted(category_counts.items(), key=lambda kv: kv[1], reverse=True)),
             "score": {
                 "avg": float(totals_row["avg_score"]) if total else 0.0,
                 "min": float(totals_row["min_score"]) if total else 0.0,

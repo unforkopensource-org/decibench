@@ -28,18 +28,21 @@ def _transcript(text: str) -> TranscriptResult:
 
 def _summary(tool_calls: list[dict] | None = None) -> CallSummary:
     events = []
-    for tc in (tool_calls or []):
-        events.append(AgentEvent(
-            type=EventType.TOOL_CALL,
-            timestamp_ms=100,
-            data=tc,
-        ))
+    for tc in tool_calls or []:
+        events.append(
+            AgentEvent(
+                type=EventType.TOOL_CALL,
+                timestamp_ms=100,
+                data=tc,
+            )
+        )
     return CallSummary(duration_ms=5000, turn_count=2, events=events)
 
 
 # ---------------------------------------------------------------------------
 # Tool call correctness
 # ---------------------------------------------------------------------------
+
 
 def test_tool_calls_all_correct():
     """All expected tools called with correct params → 100%."""
@@ -120,6 +123,7 @@ def test_tool_calls_no_param_check():
 # Slot extraction
 # ---------------------------------------------------------------------------
 
+
 def test_slot_extraction_found():
     """Expected slots found in transcript → 100%."""
     scenario = Scenario(
@@ -139,7 +143,9 @@ def test_slot_extraction_found():
     )
     transcript = _transcript("I see, John. Let me look that up.")
     score = TaskCompletionEvaluator._check_slot_extraction(
-        scenario, _summary(), transcript,
+        scenario,
+        _summary(),
+        transcript,
     )
     assert score == 100.0
 
@@ -163,7 +169,9 @@ def test_slot_extraction_missing():
     )
     transcript = _transcript("Hello, how can I help you?")
     score = TaskCompletionEvaluator._check_slot_extraction(
-        scenario, _summary(), transcript,
+        scenario,
+        _summary(),
+        transcript,
     )
     assert score == 0.0
 
@@ -177,7 +185,9 @@ def test_slot_extraction_no_slots():
         success_criteria=[SuccessCriterion(type="task_completion")],
     )
     score = TaskCompletionEvaluator._check_slot_extraction(
-        scenario, _summary(), _transcript("Hello"),
+        scenario,
+        _summary(),
+        _transcript("Hello"),
     )
     assert score is None
 
@@ -185,6 +195,7 @@ def test_slot_extraction_no_slots():
 # ---------------------------------------------------------------------------
 # Full evaluate() (deterministic, no judge)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_evaluate_deterministic_no_judge():

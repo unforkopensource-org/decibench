@@ -33,7 +33,7 @@ def calculate_snr(audio: AudioBuffer, frame_length: int = 1024) -> float:
     frames = signal[: num_frames * frame_length].reshape(num_frames, frame_length)
 
     # Calculate per-frame energy
-    frame_energy = np.sum(frames ** 2, axis=1)
+    frame_energy = np.sum(frames**2, axis=1)
 
     # Estimate noise floor from lowest-energy frames (bottom 10%)
     sorted_energy = np.sort(frame_energy)
@@ -93,7 +93,7 @@ def detect_silence_segments(
 
     for i in range(0, len(signal) - frame_length, hop_length):
         frame = signal[i : i + frame_length]
-        rms = np.sqrt(np.mean(frame ** 2))
+        rms = np.sqrt(np.mean(frame**2))
 
         db = -100.0 if rms < 1e-10 else 20 * np.log10(rms / reference)
 
@@ -136,7 +136,7 @@ def detect_speech_onset(audio: AudioBuffer, threshold_db: float = -30.0) -> floa
 
     for i in range(0, len(signal) - frame_length, frame_length):
         frame = signal[i : i + frame_length]
-        rms = np.sqrt(np.mean(frame ** 2))
+        rms = np.sqrt(np.mean(frame**2))
         if rms > 1e-10:
             db = 20 * np.log10(rms / reference)
             if db > threshold_db:

@@ -33,8 +33,17 @@ def test_no_scenario_yaml_outside_canonical_tree() -> None:
     ``suite.toml.yaml`` or vendored Action YAMLs.
     """
     suspect: list[Path] = []
-    skip_dirs = {".venv", "node_modules", ".pytest_cache", ".mypy_cache", ".git",
-                 "htmlcov", "dist", "build", "__pycache__"}
+    skip_dirs = {
+        ".venv",
+        "node_modules",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".git",
+        "htmlcov",
+        "dist",
+        "build",
+        "__pycache__",
+    }
 
     for yaml_path in REPO_ROOT.rglob("*.yaml"):
         # Skip the canonical tree itself
@@ -49,15 +58,13 @@ def test_no_scenario_yaml_outside_canonical_tree() -> None:
         text = yaml_path.read_text(encoding="utf-8", errors="replace")
         # Scenario IDs follow the pattern "<suite>-<slug>-<NNN>" with the
         # suites we ship: quick, standard, acoustic, adversarial.
-        if any(
-            f"id: {prefix}-" in text
-            for prefix in ("quick", "standard", "acoustic", "adversarial")
-        ):
+        if any(f"id: {prefix}-" in text for prefix in ("quick", "standard", "acoustic", "adversarial")):
             suspect.append(yaml_path)
 
     assert not suspect, (
         "Scenario-shaped YAML found outside the canonical tree "
-        f"({CANONICAL_ROOT}):\n  " + "\n  ".join(str(p) for p in suspect)
+        f"({CANONICAL_ROOT}):\n  "
+        + "\n  ".join(str(p) for p in suspect)
         + "\n\nMove them under src/decibench/scenarios/suites/, or rename the "
         "id: field if these aren't really decibench scenarios."
     )

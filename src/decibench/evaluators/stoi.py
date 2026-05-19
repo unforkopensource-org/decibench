@@ -63,21 +63,23 @@ class STOIEvaluator(BaseEvaluator):
         if score < 0:
             return []
 
-        return [MetricResult(
-            name="intelligibility_estimate",
-            value=round(score, 3),
-            unit="",
-            passed=score >= threshold,
-            threshold=threshold,
-            details={
-                "method": "multi_signal_estimate",
-                "note": (
-                    "Combined from audio SNR, spectral clarity, STT confidence, "
-                    "and word rate. Not a reference-based STOI measurement."
-                ),
-                **components,
-            },
-        )]
+        return [
+            MetricResult(
+                name="intelligibility_estimate",
+                value=round(score, 3),
+                unit="",
+                passed=score >= threshold,
+                threshold=threshold,
+                details={
+                    "method": "multi_signal_estimate",
+                    "note": (
+                        "Combined from audio SNR, spectral clarity, STT confidence, "
+                        "and word rate. Not a reference-based STOI measurement."
+                    ),
+                    **components,
+                },
+            )
+        ]
 
     @staticmethod
     def _estimate_intelligibility(
@@ -155,7 +157,7 @@ class STOIEvaluator(BaseEvaluator):
         spectrum = np.abs(np.fft.rfft(signal[:n_fft]))
         freqs = np.fft.rfftfreq(n_fft, d=1.0 / audio.sample_rate)
 
-        total_energy = np.sum(spectrum ** 2)
+        total_energy = np.sum(spectrum**2)
         if total_energy < 1e-10:
             return 0.0
 
@@ -177,10 +179,7 @@ class STOIEvaluator(BaseEvaluator):
         if not transcript.segments:
             return -1.0
 
-        confidences = [
-            seg.confidence for seg in transcript.segments
-            if seg.confidence > 0
-        ]
+        confidences = [seg.confidence for seg in transcript.segments if seg.confidence > 0]
         if not confidences:
             return -1.0
 

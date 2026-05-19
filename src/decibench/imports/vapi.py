@@ -14,6 +14,7 @@ from decibench.models import AgentEvent, CallTrace, EventType, TranscriptSegment
 
 logger = logging.getLogger(__name__)
 
+
 @register_importer("vapi")
 class VapiImporter(BaseImporter):
     """Imports call traces from Vapi API."""

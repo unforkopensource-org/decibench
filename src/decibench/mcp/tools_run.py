@@ -67,14 +67,14 @@ async def run_test(
             return {
                 "ok": False,
                 "findings": ["Ollama is not running."],
-                "suggested_actions": ["Start it with: ollama serve", "Install from: https://ollama.com"]
+                "suggested_actions": ["Start it with: ollama serve", "Install from: https://ollama.com"],
             }
 
         if not ensure_model(show_progress=False):
             return {
                 "ok": False,
                 "findings": ["Failed to pull the local model."],
-                "suggested_actions": ["Run manually: ollama pull llama3.2:3b"]
+                "suggested_actions": ["Run manually: ollama pull llama3.2:3b"],
             }
 
         judge_uri, judge_model, api_key = setup_ollama_judge()

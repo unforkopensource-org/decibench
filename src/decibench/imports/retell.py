@@ -14,6 +14,7 @@ from decibench.models import AgentEvent, CallTrace, EventType, TranscriptSegment
 
 logger = logging.getLogger(__name__)
 
+
 @register_importer("retell")
 class RetellImporter(BaseImporter):
     """Imports call traces from Retell AI."""

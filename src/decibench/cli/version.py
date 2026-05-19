@@ -41,6 +41,7 @@ def version_cmd(verbose: bool) -> None:
         # Check ONNX runtime for DNSMOS
         try:
             import onnxruntime
+
             click.echo(f"  onnxruntime (DNSMOS): {onnxruntime.__version__}")
         except ImportError:
             click.echo("  onnxruntime (DNSMOS): not installed (heuristic MOS fallback)")

@@ -17,10 +17,12 @@ _connector_registry: dict[str, type[BaseConnector]] = {}
 
 def register_connector(scheme: str) -> Callable[[type[BaseConnector]], type[BaseConnector]]:
     """Decorator to register a connector class for a URI scheme."""
+
     def decorator(cls: type[BaseConnector]) -> type[BaseConnector]:
         _connector_registry[scheme] = cls
         logger.debug("Registered connector: %s -> %s", scheme, cls.__name__)
         return cls
+
     return decorator
 
 

@@ -18,7 +18,7 @@ from decibench.secrets import keyring_available, store_secret
 _TARGET_TEMPLATES = {
     "demo": "demo",
     "websocket": "ws://localhost:8080/ws",
-    "process": 'exec:python my_agent.py',
+    "process": "exec:python my_agent.py",
     "http": "http://localhost:8080/invoke",
     "retell": "retell://your_agent_id",
     "vapi": "vapi://your_agent_id",
@@ -29,7 +29,8 @@ _TARGET_TEMPLATES = {
 
 @click.command("init")
 @click.option(
-    "--force", "-f",
+    "--force",
+    "-f",
     is_flag=True,
     default=False,
     help="Overwrite existing decibench.toml.",
@@ -176,9 +177,7 @@ def _resolve_model(provider: str, model: str, no_prompt: bool) -> str:
     if no_prompt:
         return catalog.default_model
 
-    if click.confirm(
-        f"Use the recommended default model ({catalog.default_model})?", default=True
-    ):
+    if click.confirm(f"Use the recommended default model ({catalog.default_model})?", default=True):
         return catalog.default_model
     return str(click.prompt("Model name", default=resolve_model_preset(provider, "balanced")))
 

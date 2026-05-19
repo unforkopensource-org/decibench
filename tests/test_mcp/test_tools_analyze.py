@@ -35,7 +35,9 @@ def _make_result(**overrides) -> SuiteResult:
                 passed=True,
                 score=90.0,
                 metrics={
-                    "ttfw_ms": MetricResult(name="ttfw_ms", value=400.0, unit="ms", passed=True, threshold=800.0),
+                    "ttfw_ms": MetricResult(
+                        name="ttfw_ms", value=400.0, unit="ms", passed=True, threshold=800.0
+                    ),
                 },
             ),
             EvalResult(
@@ -43,8 +45,12 @@ def _make_result(**overrides) -> SuiteResult:
                 passed=False,
                 score=30.0,
                 metrics={
-                    "ai_disclosure": MetricResult(name="ai_disclosure", value=0.0, unit="%", passed=False, threshold=100.0),
-                    "task_completion": MetricResult(name="task_completion", value=40.0, unit="%", passed=False, threshold=90.0),
+                    "ai_disclosure": MetricResult(
+                        name="ai_disclosure", value=0.0, unit="%", passed=False, threshold=100.0
+                    ),
+                    "task_completion": MetricResult(
+                        name="task_completion", value=40.0, unit="%", passed=False, threshold=90.0
+                    ),
                 },
             ),
             EvalResult(
@@ -52,7 +58,9 @@ def _make_result(**overrides) -> SuiteResult:
                 passed=False,
                 score=50.0,
                 metrics={
-                    "ai_disclosure": MetricResult(name="ai_disclosure", value=0.0, unit="%", passed=False, threshold=100.0),
+                    "ai_disclosure": MetricResult(
+                        name="ai_disclosure", value=0.0, unit="%", passed=False, threshold=100.0
+                    ),
                 },
             ),
         ],

@@ -29,12 +29,14 @@ if TYPE_CHECKING:
 
 @click.command("run")
 @click.option(
-    "--target", "-t",
+    "--target",
+    "-t",
     default=None,
     help="Target agent URI (ws://, exec:, http://, demo). Default: from config.",
 )
 @click.option(
-    "--suite", "-s",
+    "--suite",
+    "-s",
     default="quick",
     help="Test suite to run (quick, standard, full).",
 )
@@ -44,14 +46,16 @@ if TYPE_CHECKING:
     help="Run a single scenario by ID (e.g., quick-greeting-001).",
 )
 @click.option(
-    "--config", "-c",
+    "--config",
+    "-c",
     "config_path",
     type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Path to decibench.toml.",
 )
 @click.option(
-    "--profile", "-p",
+    "--profile",
+    "-p",
     default=None,
     help="Config profile to use (dev, ci, benchmark).",
 )
@@ -72,7 +76,8 @@ if TYPE_CHECKING:
     help="Max concurrent scenario runs.",
 )
 @click.option(
-    "--output", "-o",
+    "--output",
+    "-o",
     type=click.Path(path_type=Path),
     default=None,
     help="Output directory for results.",
@@ -121,7 +126,8 @@ if TYPE_CHECKING:
     help="Output format.",
 )
 @click.option(
-    "--verbose", "-v",
+    "--verbose",
+    "-v",
     is_flag=True,
     default=False,
     help="Enable verbose logging.",
@@ -217,6 +223,7 @@ def run_cmd(
                 TextColumn,
                 TimeElapsedColumn,
             )
+
             progress = Progress(
                 SpinnerColumn(),
                 TextColumn("[bold blue]{task.description}"),
@@ -236,6 +243,7 @@ def run_cmd(
 
     # Force serial execution for local Ollama to avoid timeouts/overload
     from decibench.llm_catalog import judge_provider_from_uri
+
     if judge_provider_from_uri(config.providers.judge) == "ollama" and parallel == 5:
         parallel = 1
 
@@ -248,15 +256,17 @@ def run_cmd(
         task_id = progress.add_task("Starting...", total=100)
 
     try:
-        result = asyncio.run(orchestrator.run_suite(
-            target=resolved_target,
-            suite=suite,
-            noise_levels=noise_levels,
-            accents=accent_list,
-            parallel=parallel,
-            scenario_filter=scenario,
-            on_progress=on_progress if progress else None,
-        ))
+        result = asyncio.run(
+            orchestrator.run_suite(
+                target=resolved_target,
+                suite=suite,
+                noise_levels=noise_levels,
+                accents=accent_list,
+                parallel=parallel,
+                scenario_filter=scenario,
+                on_progress=on_progress if progress else None,
+            )
+        )
     finally:
         if progress:
             progress.stop()
@@ -292,6 +302,7 @@ def run_cmd(
 
     if output_format == "junit":
         from decibench.reporters.junit import format_junit_xml
+
         junit_xml = format_junit_xml(result)
         if not output:
             click.echo(junit_xml)
@@ -355,6 +366,7 @@ def run_cmd(
     # Generate HTML dashboard report
     if output:
         from decibench.reporters.html_reporter import HTMLReporter
+
         HTMLReporter.report(result, output / "dashboard.html")
         click.echo(f"\nDashboard: {output / 'dashboard.html'}")
 
@@ -422,21 +434,38 @@ def _resolve_eval_mode(
         click.echo()
         click.echo(click.style("  Evaluation Mode", bold=True))
         click.echo()
-        click.echo("  [1]  Deterministic only      " + click.style("FREE", fg="green", bold=True) + "  No API key needed")
+        click.echo(
+            "  [1]  Deterministic only      "
+            + click.style("FREE", fg="green", bold=True)
+            + "  No API key needed"
+        )
         click.echo("       Latency, Audio Quality, Compliance, Keywords, Silence")
         click.echo(click.style("       Cannot detect hallucinations or assess task success", fg="yellow"))
         click.echo()
 
         if ollama_available:
-            click.echo("  [2]  Semantic (Local Model)   " + click.style("FREE", fg="green", bold=True) + "  Ollama detected!")
+            click.echo(
+                "  [2]  Semantic (Local Model)   "
+                + click.style("FREE", fg="green", bold=True)
+                + "  Ollama detected!"
+            )
         else:
-            click.echo("  [2]  Semantic (Local Model)   " + click.style("FREE", fg="green", bold=True) + "  Requires Ollama")
+            click.echo(
+                "  [2]  Semantic (Local Model)   "
+                + click.style("FREE", fg="green", bold=True)
+                + "  Requires Ollama"
+            )
         click.echo("       Everything in [1] PLUS:")
-        click.echo(click.style("       + Hallucination detection  + Task completion  + Coherence", fg="green"))
+        click.echo(
+            click.style("       + Hallucination detection  + Task completion  + Coherence", fg="green")
+        )
         click.echo("       Runs locally on your machine — no API key, no cost")
         click.echo()
 
-        click.echo("  [3]  Semantic (Cloud)         " + click.style(f"~${_estimate_suite_cost('gemini', num_scenarios)}", fg="cyan", bold=True))
+        click.echo(
+            "  [3]  Semantic (Cloud)         "
+            + click.style(f"~${_estimate_suite_cost('gemini', num_scenarios)}", fg="cyan", bold=True)
+        )
         click.echo("       Same as [2] but uses a cloud LLM (faster, needs API key)")
         click.echo()
 
@@ -530,8 +559,7 @@ def _resolve_eval_mode(
     config.providers.judge_api_key = api_key
     click.echo()
     click.echo(
-        f"  Running with {click.style(catalog.display_name, bold=True)} "
-        f"({catalog.budget_model}) judge"
+        f"  Running with {click.style(catalog.display_name, bold=True)} ({catalog.budget_model}) judge"
     )
     click.echo()
     return config
@@ -653,16 +681,16 @@ def _dry_run(
         async def _probe() -> tuple[bool, str]:
             if target.startswith(("ws://", "wss://")):
                 import websockets
+
                 try:
-                    ws = await asyncio.wait_for(
-                        websockets.connect(target, close_timeout=3), timeout=5.0
-                    )
+                    ws = await asyncio.wait_for(websockets.connect(target, close_timeout=3), timeout=5.0)
                     await ws.close()
                     return True, f"Connected to {target}"
                 except Exception as exc:
                     return False, f"Failed: {exc}"
             if target.startswith(("http://", "https://")):
                 import httpx
+
                 try:
                     async with httpx.AsyncClient(timeout=5.0) as client:
                         resp = await client.head(target)

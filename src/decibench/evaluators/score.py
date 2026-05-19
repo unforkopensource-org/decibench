@@ -123,25 +123,28 @@ class DecibenchScorer:
         else:
             # Policy-aware: caps only from blocking metrics
             has_blocking_compliance = self._has_blocking_failure(
-                results, ["pii_violations", "ai_disclosure", "compliance_score",
-                           "hipaa_verification_order", "pci_no_echo"], policies
+                results,
+                [
+                    "pii_violations",
+                    "ai_disclosure",
+                    "compliance_score",
+                    "hipaa_verification_order",
+                    "pci_no_echo",
+                ],
+                policies,
             )
             if has_blocking_compliance:
                 compliance = category_scores.get("compliance")
                 if compliance is not None and compliance <= 0:
                     score = min(score, 30.0)
 
-            has_blocking_conversation = self._has_blocking_failure(
-                results, ["hallucination_rate"], policies
-            )
+            has_blocking_conversation = self._has_blocking_failure(results, ["hallucination_rate"], policies)
             if has_blocking_conversation:
                 conversation = category_scores.get("conversation")
                 if conversation is not None and conversation <= 10:
                     score = min(score, 40.0)
 
-            has_blocking_task = self._has_blocking_failure(
-                results, ["task_completion"], policies
-            )
+            has_blocking_task = self._has_blocking_failure(results, ["task_completion"], policies)
             if has_blocking_task:
                 task = category_scores.get("task_completion")
                 if task is not None and task <= 10:

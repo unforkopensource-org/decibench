@@ -100,9 +100,7 @@ class ProcessConnector(BaseConnector):
         # every downstream latency measurement low.
         sample_rate = audio.sample_rate or 16000
         chunk_duration = _CHUNK_BYTES / (sample_rate * 2)  # seconds per chunk
-        sleep_per_chunk = (
-            chunk_duration / self._send_speed if self._send_speed > 0 else 0.0
-        )
+        sleep_per_chunk = chunk_duration / self._send_speed if self._send_speed > 0 else 0.0
 
         data = audio.data
         for offset in range(0, len(data), _CHUNK_BYTES):

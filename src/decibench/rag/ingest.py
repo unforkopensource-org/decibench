@@ -26,17 +26,25 @@ from decibench.rag.store import RagStore
 logger = logging.getLogger(__name__)
 
 
-SUPPORTED_TEXT_MIMES: frozenset[str] = frozenset({
-    "text/plain",
-    "text/markdown",
-    "text/x-markdown",
-    "application/x-markdown",
-    "text/html",
-    "application/json",
-})
-SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({
-    ".txt", ".md", ".markdown", ".mdown", ".rst",
-})
+SUPPORTED_TEXT_MIMES: frozenset[str] = frozenset(
+    {
+        "text/plain",
+        "text/markdown",
+        "text/x-markdown",
+        "application/x-markdown",
+        "text/html",
+        "application/json",
+    }
+)
+SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".txt",
+        ".md",
+        ".markdown",
+        ".mdown",
+        ".rst",
+    }
+)
 
 
 class UnsupportedMimeType(Exception):

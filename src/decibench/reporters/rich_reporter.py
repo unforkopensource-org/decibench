@@ -49,12 +49,14 @@ class RichReporter:
         score = result.decibench_score
         score_style = self._score_style(score)
         score_text = Text(f"DECIBENCH SCORE: {score}/100", style=f"bold {score_style}")
-        self._console.print(Panel(
-            score_text,
-            border_style=score_style,
-            title="Quality Score",
-            title_align="left",
-        ))
+        self._console.print(
+            Panel(
+                score_text,
+                border_style=score_style,
+                title="Quality Score",
+                title_align="left",
+            )
+        )
         self._console.print()
 
         # Score breakdown by category
@@ -175,8 +177,11 @@ class RichReporter:
 
         # Score row
         winner = self._winner_label(
-            result_a.decibench_score, result_b.decibench_score,
-            higher_better=True, name_a=name_a, name_b=name_b,
+            result_a.decibench_score,
+            result_b.decibench_score,
+            higher_better=True,
+            name_a=name_a,
+            name_b=name_b,
         )
         table.add_row(
             "Decibench Score",
@@ -211,8 +216,11 @@ class RichReporter:
                     f"{a_val}{unit}",
                     f"{b_val}{b_unit}",
                     self._winner_label(
-                        a_val, b_val, higher_better=higher_better,
-                        name_a=name_a, name_b=name_b,
+                        a_val,
+                        b_val,
+                        higher_better=higher_better,
+                        name_a=name_a,
+                        name_b=name_b,
                     ),
                 )
 
@@ -245,9 +253,14 @@ class RichReporter:
         metric_passed: dict[str, list[bool]] = {}
 
         display_order = [
-            "turn_latency_p50_ms", "turn_latency_p95_ms",
-            "wer", "mos_ovrl", "task_completion",
-            "pii_violations", "ai_disclosure", "silence_pct",
+            "turn_latency_p50_ms",
+            "turn_latency_p95_ms",
+            "wer",
+            "mos_ovrl",
+            "task_completion",
+            "pii_violations",
+            "ai_disclosure",
+            "silence_pct",
         ]
 
         display_names = {
@@ -292,10 +305,7 @@ class RichReporter:
         """Extract a short agent transcript preview from an EvalResult."""
         # Try the transcript list first
         if result.transcript:
-            agent_texts = [
-                t["text"] for t in result.transcript
-                if t.get("role") == "agent" and t.get("text")
-            ]
+            agent_texts = [t["text"] for t in result.transcript if t.get("role") == "agent" and t.get("text")]
             if agent_texts:
                 full = " ".join(agent_texts)
                 return full[:120] + "..." if len(full) > 120 else full

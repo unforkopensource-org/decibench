@@ -248,8 +248,7 @@ class BridgeClient:
         except TimeoutError as exc:
             stderr_tail = self._tail_stderr(20)
             raise BridgeTimeoutError(
-                f"Bridge did not return `connected` within {connect_timeout_ms}ms. "
-                f"Stderr: {stderr_tail}",
+                f"Bridge did not return `connected` within {connect_timeout_ms}ms. Stderr: {stderr_tail}",
             ) from exc
 
         # The CONNECTED event payload is in the queue. Find and remove it; whatever
@@ -361,9 +360,7 @@ class BridgeClient:
                         self._pending_audio_bytes = 0
                         self._pending_audio_ts_ms = None
                     else:
-                        logger.warning(
-                            "Received unsolicited binary frame from bridge (%d bytes)", len(raw)
-                        )
+                        logger.warning("Received unsolicited binary frame from bridge (%d bytes)", len(raw))
                     continue
 
                 envelope = json.loads(raw)
@@ -421,8 +418,7 @@ class BridgeClient:
             if not line:
                 raise BridgeFatalError(
                     ErrorCode.INTERNAL.value,
-                    f"Bridge sidecar exited before announcing a port. "
-                    f"stderr tail: {self._tail_stderr()}",
+                    f"Bridge sidecar exited before announcing a port. stderr tail: {self._tail_stderr()}",
                 )
             decoded = line.decode("utf-8", errors="replace").strip()
             if decoded.startswith("BRIDGE_LISTENING"):

@@ -16,12 +16,10 @@ def vapi_mock_response():
             "duration": 45,
             "createdAt": "2026-04-14T12:00:00Z",
             "phoneCallProvider": "twilio",
-            "messages": [
-                {"role": "user", "message": "hello"},
-                {"role": "assistant", "message": "hi there"}
-            ]
+            "messages": [{"role": "user", "message": "hello"}, {"role": "assistant", "message": "hi there"}],
         }
     ]
+
 
 @pytest.fixture
 def retell_mock_response():
@@ -33,10 +31,11 @@ def retell_mock_response():
             "duration": 30,
             "transcript_object": [
                 {"role": "user", "content": "hello", "words": [{"start": 0.0, "end": 0.5}]},
-                {"role": "agent", "content": "hi there", "words": [{"start": 1.0, "end": 1.5}]}
-            ]
+                {"role": "agent", "content": "hi there", "words": [{"start": 1.0, "end": 1.5}]},
+            ],
         }
     ]
+
 
 @pytest.mark.asyncio
 async def test_vapi_importer(vapi_mock_response):
@@ -63,6 +62,7 @@ async def test_vapi_importer(vapi_mock_response):
         assert trace.transcript[1].text == "hi there"
 
         assert len(trace.events) == 2  # METADATA, TURN_END
+
 
 @pytest.mark.asyncio
 async def test_retell_importer(retell_mock_response):

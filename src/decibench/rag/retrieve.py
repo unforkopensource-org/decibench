@@ -19,7 +19,7 @@ class RetrievalHit:
     chunk_id: str
     document_id: str
     text: str
-    score: float        # cosine similarity in [-1, 1]; normalized embs → [0, 1]
+    score: float  # cosine similarity in [-1, 1]; normalized embs → [0, 1]
     section_path: list[str]
     metadata: dict[str, Any]
 

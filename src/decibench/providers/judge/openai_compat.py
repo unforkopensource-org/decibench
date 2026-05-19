@@ -73,6 +73,7 @@ class OpenAICompatJudge:
     def _get_env_api_key() -> str:
         """Fall back to OPENAI_API_KEY environment variable."""
         import os
+
         return os.environ.get("OPENAI_API_KEY", "")
 
     async def evaluate(self, prompt: str, context: dict[str, Any]) -> JudgeResult:
@@ -173,9 +174,7 @@ class OpenAICompatJudge:
             parts.append(f"\n## Expected Behavior\n{context['expected']}")
 
         if "tool_calls" in context:
-            parts.append(
-                f"\n## Tool Calls Made\n{json.dumps(context['tool_calls'], indent=2)}"
-            )
+            parts.append(f"\n## Tool Calls Made\n{json.dumps(context['tool_calls'], indent=2)}")
 
         if "knowledge_base" in context:
             parts.append(f"\n## Knowledge Base\n{context['knowledge_base']}")

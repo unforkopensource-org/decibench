@@ -27,6 +27,7 @@ def doctor() -> str:
 
     # Version
     import platform
+
     checks.append(("PASS", "Decibench", f"v{__version__}"))
     checks.append(("PASS", "Python", platform.python_version()))
 
@@ -60,10 +61,13 @@ def doctor() -> str:
 
     # Node.js (needed for bridge connectors)
     node = shutil.which("node")
-    checks.append(("PASS" if node else "WARN", "Node.js", node or "Not found (needed for Retell/Vapi bridge)"))
+    checks.append(
+        ("PASS" if node else "WARN", "Node.js", node or "Not found (needed for Retell/Vapi bridge)")
+    )
 
     # RAG Status
     from decibench.rag import RagStore
+
     try:
         rag_stats = RagStore().stats()
         rag_docs = rag_stats["documents"]
@@ -184,7 +188,9 @@ def list_suites() -> str:
     except Exception as e:
         lines.append(f"Error loading suites: {e}")
 
-    lines.append("Use with: `run_test(target='...', suite='quick')` or `run_test(target='...', suite='full')`")
+    lines.append(
+        "Use with: `run_test(target='...', suite='quick')` or `run_test(target='...', suite='full')`"
+    )
 
     return "\n".join(lines)
 
@@ -192,10 +198,10 @@ def list_suites() -> str:
 @mcp.tool()
 def open_workbench(run_id: str = "") -> str:
     """Get the URL to open the visual Workbench dashboard.
-    
+
     Args:
         run_id: Optional ID of a specific run to open.
-        
+
     Returns:
         The URL to the local workbench.
     """
@@ -297,8 +303,13 @@ def configure_scoring(
     if reset:
         text = config_path.read_text(encoding="utf-8")
         defaults = {
-            "task_completion": 0.25, "latency": 0.20, "audio_quality": 0.15,
-            "conversation": 0.15, "robustness": 0.10, "interruption": 0.10, "compliance": 0.05,
+            "task_completion": 0.25,
+            "latency": 0.20,
+            "audio_quality": 0.15,
+            "conversation": 0.15,
+            "robustness": 0.10,
+            "interruption": 0.10,
+            "compliance": 0.05,
         }
         for key, val in defaults.items():
             text = upsert_toml_key(text, "scoring.weights", key, val)
@@ -324,7 +335,15 @@ def configure_scoring(
 
     if weights:
         text = config_path.read_text(encoding="utf-8")
-        valid_cats = {"task_completion", "latency", "audio_quality", "conversation", "robustness", "interruption", "compliance"}
+        valid_cats = {
+            "task_completion",
+            "latency",
+            "audio_quality",
+            "conversation",
+            "robustness",
+            "interruption",
+            "compliance",
+        }
         for pair in weights.split(","):
             pair = pair.strip()
             if "=" not in pair:
@@ -363,6 +382,7 @@ def configure_scoring(
     # Validate
     try:
         from decibench.config import load_config
+
         load_config(config_path)
     except Exception as e:
         return f"Warning: config validation error: {e}\nWeights must sum to 1.0."

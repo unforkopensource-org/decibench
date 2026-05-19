@@ -103,11 +103,7 @@ def _parse_events(value: Any) -> list[AgentEvent]:
         if not isinstance(item, dict):
             continue
         raw_type = str(item.get("type") or EventType.METADATA.value)
-        event_type = (
-            EventType(raw_type)
-            if raw_type in EventType._value2member_map_
-            else EventType.METADATA
-        )
+        event_type = EventType(raw_type) if raw_type in EventType._value2member_map_ else EventType.METADATA
         events.append(
             AgentEvent(
                 type=event_type,

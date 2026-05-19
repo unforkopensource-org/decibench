@@ -56,7 +56,9 @@ def analyze_failures(run_id: str = "") -> str:
                     failures[m.name]["reasoning"].append(m.details["judge_reasoning"])
 
     if not failures:
-        return f"No failures in this run! Score: {result.decibench_score:.1f}/100. All {total} scenarios passed."
+        return (
+            f"No failures in this run! Score: {result.decibench_score:.1f}/100. All {total} scenarios passed."
+        )
 
     # Sort by impact (most scenarios affected)
     sorted_failures = sorted(failures.items(), key=lambda x: x[1]["count"], reverse=True)
@@ -72,9 +74,13 @@ def analyze_failures(run_id: str = "") -> str:
     for rank, (metric_name, info) in enumerate(sorted_failures, 1):
         pct = (info["count"] / total) * 100
         avg_val = sum(info["values"]) / len(info["values"])
-        threshold_str = f" (threshold: {info['threshold']}{info['unit']})" if info["threshold"] is not None else ""
+        threshold_str = (
+            f" (threshold: {info['threshold']}{info['unit']})" if info["threshold"] is not None else ""
+        )
 
-        lines.append(f"**{rank}. {metric_name.replace('_', ' ').title()}** — fails {info['count']}/{total} ({pct:.0f}%)")
+        lines.append(
+            f"**{rank}. {metric_name.replace('_', ' ').title()}** — fails {info['count']}/{total} ({pct:.0f}%)"
+        )
         lines.append(f"   Average value: {avg_val:.1f}{info['unit']}{threshold_str}")
 
         # Add fix recommendations
@@ -142,7 +148,9 @@ def compare_runs(run_id_a: str, run_id_b: str) -> str:
             if score_b is not None:
                 d = score_b - score_a
                 arr = "↑" if d > 0 else "↓" if d < 0 else "→"
-                lines.append(f"| {cat_name.replace('_', ' ').title()} | {score_a:.0f} | {score_b:.0f} | {arr} {abs(d):.0f} |")
+                lines.append(
+                    f"| {cat_name.replace('_', ' ').title()} | {score_a:.0f} | {score_b:.0f} | {arr} {abs(d):.0f} |"
+                )
 
     # Scenario status changes
     a_scenarios = {r.scenario_id: r.passed for r in a.results}

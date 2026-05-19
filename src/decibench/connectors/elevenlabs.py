@@ -73,15 +73,12 @@ class ElevenLabsConnector(BaseConnector):
         prefix = "elevenlabs://"
         if not target.startswith(prefix):
             raise ValueError(f"ElevenLabs connector expects elevenlabs://<agent_id>, got: {target!r}")
-        agent_id = target[len(prefix):].strip()
+        agent_id = target[len(prefix) :].strip()
         if not agent_id:
             raise ValueError("ElevenLabs agent_id is empty")
 
         # Get API key
-        self._api_key = (
-            config.get("elevenlabs_api_key")
-            or os.environ.get("ELEVENLABS_API_KEY", "")
-        )
+        self._api_key = config.get("elevenlabs_api_key") or os.environ.get("ELEVENLABS_API_KEY", "")
         if not self._api_key:
             raise ValueError(
                 "ElevenLabs connector needs an API key. "
@@ -114,13 +111,10 @@ class ElevenLabsConnector(BaseConnector):
         except urllib.error.HTTPError as exc:
             body = exc.read().decode(errors="replace")[:200]
             raise ConnectionError(
-                f"ElevenLabs signed URL request failed ({exc.code}): {body}. "
-                f"Check your API key and agent_id."
+                f"ElevenLabs signed URL request failed ({exc.code}): {body}. Check your API key and agent_id."
             ) from exc
         except Exception as exc:
-            raise ConnectionError(
-                f"Failed to get ElevenLabs signed URL: {exc}"
-            ) from exc
+            raise ConnectionError(f"Failed to get ElevenLabs signed URL: {exc}") from exc
 
         logger.info("Connecting to ElevenLabs WebSocket for agent %s", agent_id)
 
@@ -132,9 +126,7 @@ class ElevenLabsConnector(BaseConnector):
                 close_timeout=10,
             )
         except Exception as exc:
-            raise ConnectionError(
-                f"ElevenLabs WebSocket connection failed: {exc}"
-            ) from exc
+            raise ConnectionError(f"ElevenLabs WebSocket connection failed: {exc}") from exc
 
         # Wait for conversation_initiation_metadata
         try:
@@ -235,9 +227,7 @@ class ElevenLabsConnector(BaseConnector):
             self._ws = None
 
         # Count turns from transcript events (each agent_response = 1 turn)
-        transcript_turns = sum(
-            1 for e in self._events if e.type == EventType.AGENT_TRANSCRIPT
-        )
+        transcript_turns = sum(1 for e in self._events if e.type == EventType.AGENT_TRANSCRIPT)
         turn_count = max(transcript_turns, self._send_count, 1)
 
         summary = CallSummary(
@@ -297,9 +287,7 @@ class ElevenLabsConnector(BaseConnector):
 
         # Tentative/streaming agent response
         if msg_type == "internal_tentative_agent_response":
-            text = data.get("tentative_agent_response_internal_event", {}).get(
-                "tentative_agent_response", ""
-            )
+            text = data.get("tentative_agent_response_internal_event", {}).get("tentative_agent_response", "")
             return AgentEvent(
                 type=EventType.AGENT_TRANSCRIPT,
                 timestamp_ms=now_ms,
@@ -383,12 +371,16 @@ class ElevenLabsConnector(BaseConnector):
         if self._ws is None:
             return
         try:
-            await self._ws.send(json.dumps({
-                "type": "client_tool_result",
-                "tool_call_id": tool_call_id,
-                "result": "OK",
-                "is_error": False,
-            }))
+            await self._ws.send(
+                json.dumps(
+                    {
+                        "type": "client_tool_result",
+                        "tool_call_id": tool_call_id,
+                        "result": "OK",
+                        "is_error": False,
+                    }
+                )
+            )
         except Exception:
             pass
 

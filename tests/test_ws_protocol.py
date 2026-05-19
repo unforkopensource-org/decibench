@@ -137,13 +137,7 @@ def test_extract_gemini_audio():
     audio_data = b"\x00\x01\x02" * 100  # > 100 bytes
     b64 = base64.b64encode(audio_data).decode()
     msg = {
-        "serverContent": {
-            "modelTurn": {
-                "parts": [
-                    {"inlineData": {"mimeType": "audio/pcm", "data": b64}}
-                ]
-            }
-        }
+        "serverContent": {"modelTurn": {"parts": [{"inlineData": {"mimeType": "audio/pcm", "data": b64}}]}}
     }
     result = WebSocketConnector._extract_json_audio(msg)
     assert result == audio_data
@@ -162,6 +156,7 @@ def test_extract_gemini_audio_empty_parts():
 def test_parse_message_binary():
     ws = WebSocketConnector()
     import time
+
     start_ns = time.monotonic_ns()
     event = ws._parse_message(b"\x00\x01\x02\x03", start_ns)
     assert event is not None
@@ -171,6 +166,7 @@ def test_parse_message_binary():
 def test_parse_message_json_transcript():
     ws = WebSocketConnector()
     import time
+
     start_ns = time.monotonic_ns()
     msg = json.dumps({"text": "Hello, how can I help?"})
     event = ws._parse_message(msg, start_ns)
@@ -181,6 +177,7 @@ def test_parse_message_json_transcript():
 def test_parse_message_json_error():
     ws = WebSocketConnector()
     import time
+
     start_ns = time.monotonic_ns()
     msg = json.dumps({"error": "something went wrong"})
     event = ws._parse_message(msg, start_ns)

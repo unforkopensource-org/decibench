@@ -39,14 +39,14 @@ import pytest
 # Lowering any floor REQUIRES a CHANGELOG entry under [Unreleased] Changed.
 # Raising a floor is always welcome.
 CRITICAL_FLOORS: dict[str, float] = {
-    "decibench/evaluators/aggregate.py":  90.0,
-    "decibench/connectors/session.py":    80.0,
-    "decibench/evaluators/score.py":      80.0,
-    "decibench/models.py":                95.0,
-    "decibench/store/sqlite.py":          85.0,
-    "decibench/store/migrations.py":      95.0,
-    "decibench/replay/evaluate.py":       85.0,
-    "decibench/config.py":                75.0,
+    "decibench/evaluators/aggregate.py": 90.0,
+    "decibench/connectors/session.py": 80.0,
+    "decibench/evaluators/score.py": 80.0,
+    "decibench/models.py": 95.0,
+    "decibench/store/sqlite.py": 85.0,
+    "decibench/store/migrations.py": 95.0,
+    "decibench/replay/evaluate.py": 85.0,
+    "decibench/config.py": 75.0,
 }
 
 COVERAGE_XML = Path(__file__).parent.parent / "coverage.xml"
@@ -61,9 +61,7 @@ def coverage_xml() -> Path:
     tests/test_coverage_floors.py`` alone), we generate it on the fly.
     """
     if not COVERAGE_XML.exists():
-        pytest.skip(
-            "coverage.xml not present — run `pytest --cov=decibench --cov-report=xml` first"
-        )
+        pytest.skip("coverage.xml not present — run `pytest --cov=decibench --cov-report=xml` first")
     return COVERAGE_XML
 
 
@@ -100,9 +98,7 @@ def test_critical_module_coverage_floors(coverage_xml: Path) -> None:
             continue
         observed_pct = round(rate * 100, 1)
         if observed_pct < floor:
-            shortfalls.append(
-                f"  {module_path}: {observed_pct:.1f}% < floor {floor:.1f}%"
-            )
+            shortfalls.append(f"  {module_path}: {observed_pct:.1f}% < floor {floor:.1f}%")
 
     assert not shortfalls, (
         "Critical-path coverage regressed below v1 floors:\n"

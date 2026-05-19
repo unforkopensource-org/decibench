@@ -160,7 +160,8 @@ def test_readme_does_not_reference_nonexistent_maintainer_docs() -> None:
     # Exclude README itself and well-known repo files we explicitly check elsewhere.
     excluded = {"readme.md"}
     missing = [
-        name for name in referenced
+        name
+        for name in referenced
         if name.lower() not in excluded
         and not (REPO_ROOT / name).is_file()
         and not (DOCS_DIR / name).is_file()

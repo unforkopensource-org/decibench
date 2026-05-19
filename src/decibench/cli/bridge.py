@@ -39,9 +39,7 @@ def bridge_install_cmd(dry_run: bool) -> None:
     missing = [name for name in ("node", "npm", "npx") if shutil.which(name) is None]
     if missing:
         missing_text = ", ".join(missing)
-        raise click.ClickException(
-            f"Missing required tools: {missing_text}. Install Node.js first."
-        )
+        raise click.ClickException(f"Missing required tools: {missing_text}. Install Node.js first.")
 
     if _has_local_sidecar():
         click.echo(f"Detected local sidecar source at {_LOCAL_SIDECAR_DIR}")
@@ -97,9 +95,7 @@ def bridge_doctor_cmd() -> None:
 def bridge_version_cmd() -> None:
     """Print the installed bridge version if available."""
     if shutil.which("decibench-bridge") is None:
-        raise click.ClickException(
-            "decibench-bridge is not installed. Run: decibench bridge install"
-        )
+        raise click.ClickException("decibench-bridge is not installed. Run: decibench bridge install")
 
     result = subprocess.run(
         ["decibench-bridge", "--version"],

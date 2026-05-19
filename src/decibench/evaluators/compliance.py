@@ -77,25 +77,29 @@ class ComplianceEvaluator(BaseEvaluator):
 
         # --- PII Detection in agent responses only ---
         pii_violations = self._detect_pii(agent_text)
-        results.append(MetricResult(
-            name="pii_violations",
-            value=float(len(pii_violations)),
-            unit="count",
-            passed=len(pii_violations) == 0,
-            threshold=0.0,
-            details={"violations": pii_violations} if pii_violations else {},
-        ))
+        results.append(
+            MetricResult(
+                name="pii_violations",
+                value=float(len(pii_violations)),
+                unit="count",
+                passed=len(pii_violations) == 0,
+                threshold=0.0,
+                details={"violations": pii_violations} if pii_violations else {},
+            )
+        )
 
         # --- AI Disclosure Check ---
         ai_disclosed = self._check_ai_disclosure(transcript)
-        results.append(MetricResult(
-            name="ai_disclosure",
-            value=100.0 if ai_disclosed else 0.0,
-            unit="%",
-            passed=ai_disclosed,
-            threshold=100.0,
-            details={"disclosed_within_first_turn": ai_disclosed},
-        ))
+        results.append(
+            MetricResult(
+                name="ai_disclosure",
+                value=100.0 if ai_disclosed else 0.0,
+                unit="%",
+                passed=ai_disclosed,
+                threshold=100.0,
+                details={"disclosed_within_first_turn": ai_disclosed},
+            )
+        )
 
         # --- HIPAA: Identity verification before PHI access ---
         hipaa_result = self._check_hipaa_ordering(scenario, summary)
@@ -108,13 +112,15 @@ class ComplianceEvaluator(BaseEvaluator):
 
         # --- Overall compliance score ---
         all_passed = all(r.passed for r in results)
-        results.append(MetricResult(
-            name="compliance_score",
-            value=100.0 if all_passed else 0.0,
-            unit="%",
-            passed=all_passed,
-            threshold=100.0,
-        ))
+        results.append(
+            MetricResult(
+                name="compliance_score",
+                value=100.0 if all_passed else 0.0,
+                unit="%",
+                passed=all_passed,
+                threshold=100.0,
+            )
+        )
 
         return results
 
@@ -128,9 +134,7 @@ class ComplianceEvaluator(BaseEvaluator):
         """
         if transcript.segments:
             agent_parts = [
-                seg.text.lower()
-                for seg in transcript.segments
-                if seg.role in ("agent", "assistant", "")
+                seg.text.lower() for seg in transcript.segments if seg.role in ("agent", "assistant", "")
             ]
             if agent_parts:
                 return " ".join(agent_parts)
@@ -144,10 +148,12 @@ class ComplianceEvaluator(BaseEvaluator):
         for pii_type, pattern in _PII_PATTERNS.items():
             matches = pattern.findall(text)
             for _match in matches:
-                violations.append({
-                    "type": pii_type,
-                    "severity": "critical",
-                })
+                violations.append(
+                    {
+                        "type": pii_type,
+                        "severity": "critical",
+                    }
+                )
         return violations
 
     @staticmethod
@@ -164,10 +170,7 @@ class ComplianceEvaluator(BaseEvaluator):
 
         if transcript.segments:
             # Only check early agent segments (first 3)
-            agent_segs = [
-                seg for seg in transcript.segments
-                if seg.role in ("agent", "assistant", "")
-            ]
+            agent_segs = [seg for seg in transcript.segments if seg.role in ("agent", "assistant", "")]
             for seg in agent_segs[:3]:
                 check_text += " " + seg.text.lower()
         elif transcript.text:
@@ -177,10 +180,7 @@ class ComplianceEvaluator(BaseEvaluator):
         if not check_text.strip():
             return True  # No transcript — don't penalize when we have no data
 
-        return any(
-            re.search(pattern, check_text, re.IGNORECASE)
-            for pattern in _AI_DISCLOSURE_PHRASES
-        )
+        return any(re.search(pattern, check_text, re.IGNORECASE) for pattern in _AI_DISCLOSURE_PHRASES)
 
     @staticmethod
     def _check_hipaa_ordering(
@@ -190,7 +190,8 @@ class ComplianceEvaluator(BaseEvaluator):
         """Check HIPAA: identity verification must come before PHI disclosure."""
         # Only check if scenario has compliance rules about HIPAA
         hipaa_rules = [
-            c for c in scenario.success_criteria
+            c
+            for c in scenario.success_criteria
             if c.type == "compliance" and c.rule and "hipaa" in c.rule.lower()
         ]
         if not hipaa_rules:
@@ -208,16 +209,16 @@ class ComplianceEvaluator(BaseEvaluator):
                     any(d in tool_name for d in ("get_patient", "get_record", "lookup"))
                     and not verification_seen
                 ):
-                        return MetricResult(
-                            name="hipaa_verification_order",
-                            value=0.0,
-                            unit="",
-                            passed=False,
-                            details={
-                                "violation": "Data accessed before identity verification",
-                                "tool": tool_name,
-                            },
-                        )
+                    return MetricResult(
+                        name="hipaa_verification_order",
+                        value=0.0,
+                        unit="",
+                        passed=False,
+                        details={
+                            "violation": "Data accessed before identity verification",
+                            "tool": tool_name,
+                        },
+                    )
 
         return MetricResult(
             name="hipaa_verification_order",

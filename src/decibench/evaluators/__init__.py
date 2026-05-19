@@ -53,18 +53,19 @@ def standard_stack(
         whose declared requirements are all satisfied.
     """
     candidates: list[BaseEvaluator] = [
-        WEREvaluator(),            # deterministic, transcript-only
-        LatencyEvaluator(),        # deterministic, needs events
-        MOSEvaluator(),            # statistical, needs audio
-        STOIEvaluator(),           # statistical, needs audio
-        SilenceEvaluator(),        # statistical, audio + events optional
-        ComplianceEvaluator(),     # deterministic, transcript + events
-        TaskCompletionEvaluator(), # semantic (best with judge)
+        WEREvaluator(),  # deterministic, transcript-only
+        LatencyEvaluator(),  # deterministic, needs events
+        MOSEvaluator(),  # statistical, needs audio
+        STOIEvaluator(),  # statistical, needs audio
+        SilenceEvaluator(),  # statistical, audio + events optional
+        ComplianceEvaluator(),  # deterministic, transcript + events
+        TaskCompletionEvaluator(),  # semantic (best with judge)
         HallucinationEvaluator(),  # semantic
-        InterruptionEvaluator(),   # deterministic, needs events
+        InterruptionEvaluator(),  # deterministic, needs events
     ]
     return [
-        e for e in candidates
+        e
+        for e in candidates
         if (has_audio or not e.requires_audio)
         and (has_events or not e.requires_events)
         and (has_judge or not e.requires_judge)

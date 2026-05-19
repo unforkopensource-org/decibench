@@ -8,6 +8,7 @@ from decibench.providers.judge.openai_compat import JUDGE_SYSTEM_PROMPT, OpenAIC
 # Response parsing
 # ---------------------------------------------------------------------------
 
+
 def test_parse_clean_json():
     """Parse clean JSON response."""
     raw = '{"passed": true, "score": 85.0, "reasoning": "All criteria met."}'
@@ -67,6 +68,7 @@ def test_parse_boolean_strings():
 # Prompt construction
 # ---------------------------------------------------------------------------
 
+
 def test_build_prompt_basic():
     """Basic prompt with no context."""
     prompt = OpenAICompatJudge._build_prompt("Evaluate this.", {})
@@ -75,21 +77,27 @@ def test_build_prompt_basic():
 
 def test_build_prompt_with_transcript():
     """Transcript context added to prompt."""
-    prompt = OpenAICompatJudge._build_prompt("Evaluate.", {
-        "transcript": "Hello, how can I help?",
-    })
+    prompt = OpenAICompatJudge._build_prompt(
+        "Evaluate.",
+        {
+            "transcript": "Hello, how can I help?",
+        },
+    )
     assert "Hello, how can I help?" in prompt
     assert "Conversation Transcript" in prompt
 
 
 def test_build_prompt_with_all_context():
     """All context fields added."""
-    prompt = OpenAICompatJudge._build_prompt("Evaluate.", {
-        "transcript": "text",
-        "expected": "goal",
-        "tool_calls": [{"name": "book"}],
-        "knowledge_base": "facts",
-    })
+    prompt = OpenAICompatJudge._build_prompt(
+        "Evaluate.",
+        {
+            "transcript": "text",
+            "expected": "goal",
+            "tool_calls": [{"name": "book"}],
+            "knowledge_base": "facts",
+        },
+    )
     assert "text" in prompt
     assert "goal" in prompt
     assert "book" in prompt
@@ -99,6 +107,7 @@ def test_build_prompt_with_all_context():
 # ---------------------------------------------------------------------------
 # System prompt quality
 # ---------------------------------------------------------------------------
+
 
 def test_system_prompt_has_cot():
     """System prompt must enforce chain-of-thought."""
@@ -123,6 +132,7 @@ def test_system_prompt_has_json_format():
 # ---------------------------------------------------------------------------
 # Judge initialization
 # ---------------------------------------------------------------------------
+
 
 def test_judge_default_url():
     """Default base URL is OpenAI API."""

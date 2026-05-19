@@ -38,12 +38,14 @@ def rag_cmd() -> None:
 
 @rag_cmd.command("ingest")
 @click.argument("paths", nargs=-1, type=click.Path(path_type=Path))
-@click.option("--text", "text_input", default=None,
-              help="Pasted text to ingest (alternative to file paths).")
-@click.option("--title", default="pasted-snippet",
-              help="Title for --text ingest (ignored when files given).")
-@click.option("--cloud-confirm", is_flag=True, default=False,
-              help="Explicit acknowledgement that cloud embedding is OK.")
+@click.option("--text", "text_input", default=None, help="Pasted text to ingest (alternative to file paths).")
+@click.option("--title", default="pasted-snippet", help="Title for --text ingest (ignored when files given).")
+@click.option(
+    "--cloud-confirm",
+    is_flag=True,
+    default=False,
+    help="Explicit acknowledgement that cloud embedding is OK.",
+)
 def rag_ingest_cmd(
     paths: tuple[Path, ...],
     text_input: str | None,
@@ -60,9 +62,7 @@ def rag_ingest_cmd(
     allow_cloud = rag_cfg.allow_cloud or cloud_confirm
 
     if not paths and not text_input:
-        raise click.ClickException(
-            "Pass one or more file/dir paths, or use --text \"...\". Nothing to ingest."
-        )
+        raise click.ClickException('Pass one or more file/dir paths, or use --text "...". Nothing to ingest.')
 
     store = RagStore()
     try:
@@ -115,8 +115,7 @@ def rag_list_cmd(as_json: bool) -> None:
     click.echo(f"{'id (sha256[:12])':<14}  {'chunks':>6}  {'bytes':>8}  embed_provider           title")
     for d in docs:
         click.echo(
-            f"{d.id[:12]}  {d.chunk_count:>6}  {d.bytes:>8}  "
-            f"{d.embedding_provider[:23]:<23}  {d.title}"
+            f"{d.id[:12]}  {d.chunk_count:>6}  {d.bytes:>8}  {d.embedding_provider[:23]:<23}  {d.title}"
         )
 
 
@@ -156,8 +155,11 @@ def rag_search_cmd(query: str, top_k: int, as_json: bool) -> None:
 
 
 @rag_cmd.command("synthesize")
-@click.option("--topic", multiple=True,
-              help="Topic to cover (repeat for multiple). If omitted, uses a default 8-topic set.")
+@click.option(
+    "--topic",
+    multiple=True,
+    help="Topic to cover (repeat for multiple). If omitted, uses a default 8-topic set.",
+)
 @click.option("--suite", default="custom-rag", help="Suite slug to write under.")
 @click.option(
     "--out-dir",
@@ -165,8 +167,9 @@ def rag_search_cmd(query: str, top_k: int, as_json: bool) -> None:
     default=None,
     help="Where to write the synthesized scenarios.",
 )
-@click.option("--count", type=int, default=None,
-              help="Cap the number of topics actually synthesized (default: all).")
+@click.option(
+    "--count", type=int, default=None, help="Cap the number of topics actually synthesized (default: all)."
+)
 def rag_synthesize_cmd(
     topic: tuple[str, ...],
     suite: str,
@@ -182,9 +185,7 @@ def rag_synthesize_cmd(
     rag_cfg = config.rag
     store = RagStore()
     if store.chunk_count() == 0:
-        raise click.ClickException(
-            "Corpus is empty. Ingest something first: decibench rag ingest <files>"
-        )
+        raise click.ClickException("Corpus is empty. Ingest something first: decibench rag ingest <files>")
 
     if not config.has_judge:
         raise click.ClickException(
@@ -214,12 +215,15 @@ def rag_synthesize_cmd(
 
     if out_dir is None:
         from importlib import resources
+
         # Default: write under the packaged suites tree so the loader picks it up.
         suite_pkg = resources.files("decibench.scenarios.suites")
         out_dir = Path(str(suite_pkg)) / suite
 
-    click.echo(f"Synthesizing {len(topics)} scenarios via "
-               f"{config.providers.judge}/{config.providers.judge_model} → {out_dir}")
+    click.echo(
+        f"Synthesizing {len(topics)} scenarios via "
+        f"{config.providers.judge}/{config.providers.judge_model} → {out_dir}"
+    )
 
     result = synthesize_scenarios(
         topics=topics,
@@ -245,8 +249,7 @@ def rag_synthesize_cmd(
 
 @rag_cmd.command("remove")
 @click.option("--document-id", default=None, help="Remove one document by id (or prefix).")
-@click.option("--all", "remove_all", is_flag=True, default=False,
-              help="Wipe the entire RAG corpus.")
+@click.option("--all", "remove_all", is_flag=True, default=False, help="Wipe the entire RAG corpus.")
 @click.option("--yes", is_flag=True, default=False, help="Skip confirmation.")
 def rag_remove_cmd(document_id: str | None, remove_all: bool, yes: bool) -> None:
     """Remove a document (or wipe the corpus)."""

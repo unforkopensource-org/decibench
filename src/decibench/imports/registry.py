@@ -17,10 +17,12 @@ _importer_registry: dict[str, type[BaseImporter]] = {}
 
 def register_importer(name: str) -> Callable[[type[BaseImporter]], type[BaseImporter]]:
     """Decorator to register an importer class."""
+
     def decorator(cls: type[BaseImporter]) -> type[BaseImporter]:
         _importer_registry[name] = cls
         logger.debug("Registered importer: %s -> %s", name, cls.__name__)
         return cls
+
     return decorator
 
 

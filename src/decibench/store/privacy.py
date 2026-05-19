@@ -27,10 +27,12 @@ def _luhn_check(digits_str: str) -> bool:
 
 def _redact_cards(text: str) -> str:
     """Replace credit card numbers (Luhn-validated) with redaction marker."""
+
     def _replace(match: re.Match[str]) -> str:
         if _luhn_check(match.group()):
             return "[REDACTED_CARD]"
         return match.group()  # Not a valid card — leave as-is
+
     return _CARD_PATTERN.sub(_replace, text)
 
 
@@ -38,24 +40,25 @@ def _redact_cards(text: str) -> str:
 _REDACTION_RULES: list[tuple[re.Pattern[str], str]] = [
     # US Social Security Number (strict 3-2-4 with hyphens)
     (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[REDACTED_SSN]"),
-
     # Phone Numbers (require separators or parentheses to avoid false positives)
-    (re.compile(
-        r"(?:"
-        r"\(\d{3}\)[\s.-]?\d{3}[\s.-]?\d{4}"
-        r"|"
-        r"\+?1[\s.-]\d{3}[\s.-]\d{3}[\s.-]\d{4}"
-        r"|"
-        r"\b\d{3}[\s.-]\d{3}[\s.-]\d{4}\b"
-        r")"
-    ), "[REDACTED_PHONE]"),
-
+    (
+        re.compile(
+            r"(?:"
+            r"\(\d{3}\)[\s.-]?\d{3}[\s.-]?\d{4}"
+            r"|"
+            r"\+?1[\s.-]\d{3}[\s.-]\d{3}[\s.-]\d{4}"
+            r"|"
+            r"\b\d{3}[\s.-]\d{3}[\s.-]\d{4}\b"
+            r")"
+        ),
+        "[REDACTED_PHONE]",
+    ),
     # Email Addresses
     (re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"), "[REDACTED_EMAIL]"),
-
     # Common API Keys / Bearer Tokens
     (re.compile(r"\b(?:sk-[a-zA-Z0-9_]{20,}|Bearer\s+[a-zA-Z0-9_\-\.]{20,})\b"), "[REDACTED_API_KEY]"),
 ]
+
 
 class RedactionPolicy:
     """Policy for scrubbing sensitive data from payloads before storage."""
@@ -92,7 +95,9 @@ class RedactionPolicy:
         redacted_data: dict[str, Any] = {}
         for key, value in data.items():
             k_str = str(key).lower()
-            is_secret = any(sec in k_str for sec in ("api_key", "secret", "token", "password", "credentials", "key"))
+            is_secret = any(
+                sec in k_str for sec in ("api_key", "secret", "token", "password", "credentials", "key")
+            )
 
             if is_secret:
                 redacted_data[key] = "[REDACTED_SECRET]"

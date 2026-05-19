@@ -61,12 +61,14 @@ DEFAULT_CONFIG_NAME = "decibench.toml"
 def _expand_env_vars(value: Any) -> Any:
     """Recursively expand ${VAR} patterns in strings from environment."""
     if isinstance(value, str):
+
         def _replace(match: re.Match[str]) -> str:
             var_name = match.group(1)
             env_val = os.environ.get(var_name)
             if env_val is None:
                 return match.group(0)  # Leave unexpanded if not set
             return env_val
+
         return _ENV_VAR_PATTERN.sub(_replace, value)
     if isinstance(value, dict):
         return {k: _expand_env_vars(v) for k, v in value.items()}
@@ -77,16 +79,19 @@ def _expand_env_vars(value: Any) -> Any:
 
 class ProjectConfig(BaseModel):
     """[project] section."""
+
     name: str = "my-voice-agent"
 
 
 class TargetConfig(BaseModel):
     """[target] section."""
+
     default: str = "demo"
 
 
 class AuthConfig(BaseModel):
     """[auth] section — values may come from config, env vars, or keyring."""
+
     model_config = {"extra": "allow"}
 
     vapi_api_key: str = ""
@@ -98,6 +103,7 @@ class AuthConfig(BaseModel):
 
 class ProvidersConfig(BaseModel):
     """[providers] section — pluggable TTS, STT, and LLM judge."""
+
     tts: str = "edge-tts"
     tts_voice: str = "en-US-JennyNeural"
     stt: str = "faster-whisper:base"
@@ -108,6 +114,7 @@ class ProvidersConfig(BaseModel):
 
 class AudioConfig(BaseModel):
     """[audio] section."""
+
     sample_rate: int = 16000
     channels: int = 1
     bit_depth: int = 16
@@ -116,6 +123,7 @@ class AudioConfig(BaseModel):
 
 class ConnectorConfig(BaseModel):
     """[connector] section — WebSocket protocol and transport settings."""
+
     ws_protocol: str = "auto"
     ws_send_format: str = ""
     ws_setup_message: str = ""
@@ -132,6 +140,7 @@ class ConnectorConfig(BaseModel):
 
 class EvaluationConfig(BaseModel):
     """[evaluation] section."""
+
     runs_per_scenario: int = Field(default=1, ge=1, le=20)
     judge_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     judge_runs: int = Field(default=1, ge=1, le=5)  # 3 = median-of-3 for stability
@@ -154,10 +163,10 @@ class LatencyScoringConfig(BaseModel):
     latency expectations changes them in exactly one place.
     """
 
-    p50:  tuple[int, int, int] = (300,  800, 2000)
-    p95:  tuple[int, int, int] = (500, 1200, 3000)
-    p99:  tuple[int, int, int] = (800, 2000, 5000)
-    ttfw: tuple[int, int, int] = (300,  800, 2000)
+    p50: tuple[int, int, int] = (300, 800, 2000)
+    p95: tuple[int, int, int] = (500, 1200, 3000)
+    p99: tuple[int, int, int] = (800, 2000, 5000)
+    ttfw: tuple[int, int, int] = (300, 800, 2000)
 
     @staticmethod
     def score_band(value: float, band: tuple[int, int, int]) -> float:
@@ -176,6 +185,7 @@ class LatencyScoringConfig(BaseModel):
 
 class ScoringWeights(BaseModel):
     """[scoring.weights] section — all weights must sum to 1.0."""
+
     task_completion: float = 0.25
     latency: float = 0.20
     audio_quality: float = 0.15
@@ -203,6 +213,7 @@ class ScoringWeights(BaseModel):
 
 class ScoringConfig(BaseModel):
     """[scoring] section."""
+
     weights: ScoringWeights = Field(default_factory=ScoringWeights)
     policies: dict[str, MetricPolicy] = Field(default_factory=dict)
     latency_bands: LatencyScoringConfig = Field(default_factory=LatencyScoringConfig)
@@ -227,6 +238,7 @@ class ScoringConfig(BaseModel):
 
 class CIConfig(BaseModel):
     """[ci] section."""
+
     min_score: float = Field(default=80.0, ge=0.0, le=100.0)
     max_p95_latency_ms: int = Field(default=1500, ge=100)
     fail_on_compliance_violation: bool = True
@@ -252,6 +264,7 @@ class RagConfig(BaseModel):
 
 class ProfileConfig(BaseModel):
     """A named configuration profile (e.g., dev, ci, benchmark)."""
+
     suite: str = "quick"
     runs_per_scenario: int = Field(default=1, ge=1, le=20)
     min_score: float = Field(default=0.0, ge=0.0, le=100.0)
@@ -261,6 +274,7 @@ class ProfileConfig(BaseModel):
 
 class DecibenchConfig(BaseModel):
     """Root configuration model for decibench.toml."""
+
     project: ProjectConfig = Field(default_factory=ProjectConfig)
     target: TargetConfig = Field(default_factory=TargetConfig)
     auth: AuthConfig = Field(default_factory=AuthConfig)
@@ -309,10 +323,7 @@ class DecibenchConfig(BaseModel):
     def with_profile(self, profile_name: str) -> DecibenchConfig:
         """Return a new config with profile overrides applied."""
         if profile_name not in self.profiles:
-            msg = (
-                f"Profile '{profile_name}' not found. "
-                f"Available: {list(self.profiles.keys())}"
-            )
+            msg = f"Profile '{profile_name}' not found. Available: {list(self.profiles.keys())}"
             raise ValueError(msg)
         profile = self.profiles[profile_name]
         data = self.model_dump()

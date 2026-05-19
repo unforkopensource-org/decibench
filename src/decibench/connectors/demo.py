@@ -111,7 +111,7 @@ def _generate_speech_like_audio(
     f0 = 120 + (seed % 80)  # 120-200 Hz (male-female range)
 
     # Formant frequencies for vowel-like sounds
-    f1 = 300 + (seed >> 8) % 400   # 300-700 Hz (first formant)
+    f1 = 300 + (seed >> 8) % 400  # 300-700 Hz (first formant)
     f2 = 900 + (seed >> 16) % 1200  # 900-2100 Hz (second formant)
     f3 = 2400 + (seed >> 24) % 600  # 2400-3000 Hz (third formant)
 

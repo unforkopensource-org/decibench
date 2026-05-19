@@ -462,25 +462,27 @@ def _generate_extended_scenarios() -> list[Scenario]:
 
     for base_id, desc, text in base_scenarios:
         for noise in noises:
-            extended.append(Scenario(
-                id=f"{base_id}{idx:03d}",
-                description=f"{desc} ({noise} noise)",
-                persona=Persona(
-                    background_noise=noise,
-                    noise_level_db=15.0 if noise != "clean" else 0.0,
-                ),
-                conversation=[
-                    ConversationTurn(role="caller", text=text),
-                    ConversationTurn(
-                        role="agent",
-                        expect=TurnExpectation(max_latency_ms=1000),
+            extended.append(
+                Scenario(
+                    id=f"{base_id}{idx:03d}",
+                    description=f"{desc} ({noise} noise)",
+                    persona=Persona(
+                        background_noise=noise,
+                        noise_level_db=15.0 if noise != "clean" else 0.0,
                     ),
-                ],
-                success_criteria=[
-                    SuccessCriterion(type="task_completion"),
-                    SuccessCriterion(type="latency", p95_max_ms=1500),
-                ],
-            ))
+                    conversation=[
+                        ConversationTurn(role="caller", text=text),
+                        ConversationTurn(
+                            role="agent",
+                            expect=TurnExpectation(max_latency_ms=1000),
+                        ),
+                    ],
+                    success_criteria=[
+                        SuccessCriterion(type="task_completion"),
+                        SuccessCriterion(type="latency", p95_max_ms=1500),
+                    ],
+                )
+            )
             idx += 1
 
     return extended[:40]

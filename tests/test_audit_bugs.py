@@ -36,9 +36,7 @@ def test_bug_003_privacy_redacts_api_keys():
         "metadata": {
             "vapi_api_key": "sk-something",
             "normal_field": "hello",
-            "nested_credentials": {
-                "secret_token": "abc123xyz"
-            }
+            "nested_credentials": {"secret_token": "abc123xyz"},
         }
     }
     redacted = policy.redact_dict(payload)
@@ -47,9 +45,7 @@ def test_bug_003_privacy_redacts_api_keys():
     assert redacted["metadata"]["nested_credentials"] == "[REDACTED_SECRET]"
 
     # Test string regex redaction
-    text_payload = {
-        "response": "Here is the key: sk-abcdefghijklmnopqrstuvwxyz123"
-    }
+    text_payload = {"response": "Here is the key: sk-abcdefghijklmnopqrstuvwxyz123"}
     redacted_text = policy.redact_dict(text_payload)
     assert "[REDACTED_API_KEY]" in redacted_text["response"]
     assert "sk-abcdefghijklmnopqrstuvwxyz123" not in redacted_text["response"]
@@ -58,14 +54,8 @@ def test_bug_003_privacy_redacts_api_keys():
 def test_bug_005_config_custom_secrets_redacted():
     """BUG-005: Custom secret fields in config are redacted."""
     config_dict = {
-        "providers": {
-            "judge_api_key": "real-key",
-            "custom_secret_v2": "my-secret-key"
-        },
-        "auth": {
-            "my_credentials": "password123",
-            "token": ""
-        }
+        "providers": {"judge_api_key": "real-key", "custom_secret_v2": "my-secret-key"},
+        "auth": {"my_credentials": "password123", "token": ""},
     }
     redacted = _redact_secrets(config_dict)
     assert redacted["providers"]["judge_api_key"] == "<set>"
@@ -77,6 +67,7 @@ def test_bug_005_config_custom_secrets_redacted():
 def test_bug_007_bridge_client_generates_token():
     """BUG-007: BridgeClient generates a token and passes it to sidecar."""
     from decibench.bridge.client import BridgeClient
+
     client = BridgeClient()
     assert client._token is not None
     assert len(client._token) > 0

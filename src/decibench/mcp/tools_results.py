@@ -25,7 +25,10 @@ def list_runs(limit: int = 10) -> str:
     if not runs:
         return "No test runs found. Run a test first with the `run_test` tool."
 
-    lines = ["| Run ID | Score | Passed | Suite | Mode | Target | Time |", "| --- | --- | --- | --- | --- | --- | --- |"]
+    lines = [
+        "| Run ID | Score | Passed | Suite | Mode | Target | Time |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
     for r in runs:
         run_id = r["id"][:30] + "..." if len(r["id"]) > 30 else r["id"]
         score = r.get("score", 0)
@@ -37,7 +40,9 @@ def list_runs(limit: int = 10) -> str:
         if len(target) > 25:
             target = target[:22] + "..."
         ts = r.get("timestamp", "")[:16]
-        lines.append(f"| `{run_id}` | **{score:.1f}** | {passed}/{total} | {suite} | {mode} | {target} | {ts} |")
+        lines.append(
+            f"| `{run_id}` | **{score:.1f}** | {passed}/{total} | {suite} | {mode} | {target} | {ts} |"
+        )
 
     return "\n".join(lines)
 

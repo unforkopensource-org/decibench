@@ -30,8 +30,10 @@ def test_judge_construction_uses_provider_uri_not_model_name():
     not with the model name.  Before the fix it passed judge_model directly,
     which would fail for any real model name like 'gpt-5-mini'.
     """
-    with patch("decibench.api.app.load_config") as mock_config, \
-         patch("decibench.api.app.get_judge") as mock_get_judge:
+    with (
+        patch("decibench.api.app.load_config") as mock_config,
+        patch("decibench.api.app.get_judge") as mock_get_judge,
+    ):
         cfg = mock_config.return_value
         cfg.has_judge = True
         cfg.providers.judge = "openai-compat://localhost:11434/v1"
@@ -54,8 +56,10 @@ def test_judge_construction_uses_provider_uri_not_model_name():
 
 def test_judge_construction_skipped_when_no_judge():
     """When has_judge is False, get_judge should not be called at all."""
-    with patch("decibench.api.app.load_config") as mock_config, \
-         patch("decibench.api.app.get_judge") as mock_get_judge:
+    with (
+        patch("decibench.api.app.load_config") as mock_config,
+        patch("decibench.api.app.get_judge") as mock_get_judge,
+    ):
         cfg = mock_config.return_value
         cfg.has_judge = False
         cfg.providers.judge = "none"

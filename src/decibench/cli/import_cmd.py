@@ -26,6 +26,7 @@ def import_jsonl_cmd(path: Path, store_path: Path | None) -> None:
         store.save_call_trace(trace)
     click.echo(f"Imported {len(traces)} call trace(s) into {store.path}")
 
+
 def _run_importer_async(importer_name: str, limit: int, since: str | None) -> None:
     import asyncio
     import os
@@ -42,6 +43,7 @@ def _run_importer_async(importer_name: str, limit: int, since: str | None) -> No
         store.save_call_trace(trace)
     click.echo(f"Imported {len(traces)} call traces from {importer_name} into {store.path}")
 
+
 @import_cmd.command("vapi")
 @click.option("--limit", default=10, help="Max traces to fetch.")
 @click.option("--since", default=None, help="Fetch calls since this date.")
@@ -50,10 +52,10 @@ def import_vapi_cmd(limit: int, since: str | None) -> None:
     # Ensure standard Decibench config environment is loaded if needed
     _run_importer_async("vapi", limit, since)
 
+
 @import_cmd.command("retell")
 @click.option("--limit", default=10, help="Max traces to fetch.")
 @click.option("--since", default=None, help="Fetch calls since this date.")
 def import_retell_cmd(limit: int, since: str | None) -> None:
     """Import call traces from Retell."""
     _run_importer_async("retell", limit, since)
-

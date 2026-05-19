@@ -140,7 +140,7 @@ def _call_judge(
     # the bare base URL). Normalize to a real https/http URL.
     base = judge_uri
     if base.startswith("openai-compat://"):
-        base = base[len("openai-compat://"):]
+        base = base[len("openai-compat://") :]
     if not base.startswith(("http://", "https://")):
         base = f"http://{base}"
     base = base.rstrip("/")
@@ -225,7 +225,8 @@ def synthesize_scenarios(
                 "content": (
                     "CONTEXT (your grounding):\n---\n"
                     + (grounding_corpus or "(no corpus retrieved — author conservatively)")
-                    + "\n---\n\nTOPIC: " + topic["intent"]
+                    + "\n---\n\nTOPIC: "
+                    + topic["intent"]
                     + f"\nSUITE: {suite}"
                     + f"\nSCENARIO ID: {suite}-{topic['id_slug']}-001"
                     + f"\nTAGS: {topic.get('tags', '')}"
@@ -246,21 +247,25 @@ def synthesize_scenarios(
                     messages=messages,
                 )
             except Exception as exc:
-                result.rejected.append({
-                    "topic": topic["id_slug"],
-                    "attempt": attempt,
-                    "reason": f"judge call failed: {exc}",
-                })
+                result.rejected.append(
+                    {
+                        "topic": topic["id_slug"],
+                        "attempt": attempt,
+                        "reason": f"judge call failed: {exc}",
+                    }
+                )
                 break
 
             try:
                 obj = _parse_json_robust(raw)
             except json.JSONDecodeError as exc:
                 messages.append({"role": "assistant", "content": raw})
-                messages.append({
-                    "role": "user",
-                    "content": f"That was not valid JSON: {exc}. Emit ONLY a JSON object.",
-                })
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": f"That was not valid JSON: {exc}. Emit ONLY a JSON object.",
+                    }
+                )
                 continue
 
             obj.setdefault("version", 1)
@@ -280,30 +285,37 @@ def synthesize_scenarios(
 
             # Validation failed — surface the validator complaint for the next try.
             messages.append({"role": "assistant", "content": raw})
-            messages.append({
-                "role": "user",
-                "content": (
-                    "Validation failed:\n" + "\n".join(report.failures)
-                    + "\nFix and re-emit the JSON object."
-                ),
-            })
+            messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        "Validation failed:\n"
+                        + "\n".join(report.failures)
+                        + "\nFix and re-emit the JSON object."
+                    ),
+                }
+            )
 
         if accepted_scenario is None:
-            result.rejected.append({
-                "topic": topic["id_slug"],
-                "reason": "all attempts rejected by validator",
-                "last_report": report.as_dict() if report else None,
-            })
+            result.rejected.append(
+                {
+                    "topic": topic["id_slug"],
+                    "reason": "all attempts rejected by validator",
+                    "last_report": report.as_dict() if report else None,
+                }
+            )
             continue
 
         path = out_dir / f"{topic['id_slug']}-001.yaml"
         path.write_text(yaml.safe_dump(accepted_scenario.model_dump(mode="json"), sort_keys=False))
         result.written.append(path)
-        result.accepted.append({
-            "scenario_id": accepted_scenario.id,
-            "grounding_score": report.grounding_score if report else 1.0,
-            "path": str(path),
-        })
+        result.accepted.append(
+            {
+                "scenario_id": accepted_scenario.id,
+                "grounding_score": report.grounding_score if report else 1.0,
+                "path": str(path),
+            }
+        )
 
     # Always stamp the suite with a manifest so SuiteResult.suite_version isn't empty.
     stamp = out_dir / "suite.toml"

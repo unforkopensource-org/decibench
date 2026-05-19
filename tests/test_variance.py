@@ -17,9 +17,7 @@ def _run(score: float, *, passed: bool, run_index: int) -> EvalResult:
         passed=passed,
         score=score,
         run_index=run_index,
-        metrics={
-            "wer": MetricResult(name="wer", value=10.0, unit="%", passed=passed)
-        },
+        metrics={"wer": MetricResult(name="wer", value=10.0, unit="%", passed=passed)},
     )
 
 

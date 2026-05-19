@@ -80,10 +80,7 @@ class BridgeConnector(BaseConnector):
         The default looks for `<platform>_api_key` and falls back to env vars.
         """
         env_key = f"{self.platform_name.upper()}_API_KEY"
-        api_key = (
-            config.get(f"{self.platform_name}_api_key")
-            or os.environ.get(env_key, "")
-        )
+        api_key = config.get(f"{self.platform_name}_api_key") or os.environ.get(env_key, "")
         return {"api_key": api_key} if api_key else {}
 
     def parse_agent_id(self, target: str) -> str:
@@ -92,7 +89,7 @@ class BridgeConnector(BaseConnector):
             raise ValueError(
                 f"{self.platform_name} connector expected a {prefix}<agent_id> target, got: {target!r}"
             )
-        return target[len(prefix):].strip()
+        return target[len(prefix) :].strip()
 
     # -------------------------------------------------------------- BaseConnector
 
@@ -163,9 +160,7 @@ class BridgeConnector(BaseConnector):
             try:
                 remaining = max(0.05, deadline - time.monotonic())
                 timeout = post_turn_end_idle_grace_s if saw_turn_end else idle_grace_s
-                event = await asyncio.wait_for(
-                    self._receive_queue.get(), timeout=min(timeout, remaining)
-                )
+                event = await asyncio.wait_for(self._receive_queue.get(), timeout=min(timeout, remaining))
             except TimeoutError:
                 # No events for the current grace period — assume the agent is done.
                 break

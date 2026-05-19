@@ -65,13 +65,15 @@ class OpenAICompatSTTProvider:
         segments: list[TranscriptSegment] = []
 
         for seg in data.get("segments", []):
-            segments.append(TranscriptSegment(
-                role="agent",
-                text=seg.get("text", "").strip(),
-                start_ms=seg.get("start", 0) * 1000.0,
-                end_ms=seg.get("end", 0) * 1000.0,
-                confidence=seg.get("avg_logprob", 0.0),
-            ))
+            segments.append(
+                TranscriptSegment(
+                    role="agent",
+                    text=seg.get("text", "").strip(),
+                    start_ms=seg.get("start", 0) * 1000.0,
+                    end_ms=seg.get("end", 0) * 1000.0,
+                    confidence=seg.get("avg_logprob", 0.0),
+                )
+            )
 
         return TranscriptResult(
             text=text,

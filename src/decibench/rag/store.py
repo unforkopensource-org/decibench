@@ -112,9 +112,7 @@ class RagStore:
         sha = hashlib.sha256(content.encode("utf-8", errors="replace")).hexdigest()
         ingested_at = datetime.now(UTC).isoformat()
         with self._connect() as conn:
-            existing = conn.execute(
-                "SELECT id FROM rag_documents WHERE id = ?", (sha,)
-            ).fetchone()
+            existing = conn.execute("SELECT id FROM rag_documents WHERE id = ?", (sha,)).fetchone()
             if existing:
                 return sha
             conn.execute(

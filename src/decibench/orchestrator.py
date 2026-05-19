@@ -99,18 +99,13 @@ class Orchestrator:
 
         # 1b. Filter to single scenario if requested
         if scenario_filter:
-            scenarios = [
-                s for s in scenarios
-                if s.id == scenario_filter or scenario_filter in s.id
-            ]
+            scenarios = [s for s in scenarios if s.id == scenario_filter or scenario_filter in s.id]
             if not scenarios:
                 logger.error("No scenario matching '%s' found", scenario_filter)
 
         # 2. Expand variants if requested
         if noise_levels or accents:
-            scenarios = self._scenario_loader.expand_variants(
-                scenarios, noise_levels, accents
-            )
+            scenarios = self._scenario_loader.expand_variants(scenarios, noise_levels, accents)
 
         self._progress_callback = on_progress
         self._completed_count = 0
@@ -205,6 +200,7 @@ class Orchestrator:
             judge_prov = ""
             if self._config.has_judge:
                 from decibench.llm_catalog import judge_provider_from_uri
+
                 judge_prov = judge_provider_from_uri(self._config.providers.judge) or ""
 
             # Reproducibility rollup. flake_rate is the fraction of scenarios
@@ -214,9 +210,7 @@ class Orchestrator:
             flake_count = sum(1 for r in eval_results if r.flaked)
             flake_rate = flake_count / len(eval_results) if eval_results else 0.0
             score_stddev_avg = (
-                sum(r.score_stddev for r in eval_results) / len(eval_results)
-                if eval_results
-                else 0.0
+                sum(r.score_stddev for r in eval_results) / len(eval_results) if eval_results else 0.0
             )
 
             return SuiteResult(
@@ -283,19 +277,25 @@ class Orchestrator:
                         scenario.id,
                         e,
                     )
-                    runs.append(EvalResult(
-                        scenario_id=scenario.id,
-                        passed=False,
-                        score=0.0,
-                        failures=[str(e)],
-                        run_index=run_idx,
-                    ))
+                    runs.append(
+                        EvalResult(
+                            scenario_id=scenario.id,
+                            passed=False,
+                            score=0.0,
+                            failures=[str(e)],
+                            run_index=run_idx,
+                        )
+                    )
 
-            return self._average_runs(runs) if runs else EvalResult(
-                scenario_id=scenario.id,
-                passed=False,
-                score=0.0,
-                failures=["All runs failed"],
+            return (
+                self._average_runs(runs)
+                if runs
+                else EvalResult(
+                    scenario_id=scenario.id,
+                    passed=False,
+                    score=0.0,
+                    failures=["All runs failed"],
+                )
             )
 
     async def _run_single_scenario(
@@ -364,13 +364,15 @@ class Orchestrator:
                             target_encoding=connector.required_encoding,
                         )
                         tts_duration = (time.monotonic() - tts_start) * 1000
-                        spans.append(TraceSpan(
-                            name="tts",
-                            start_ms=(tts_start - start) * 1000,
-                            end_ms=(tts_start - start) * 1000 + tts_duration,
-                            duration_ms=tts_duration,
-                            turn_index=turn_idx
-                        ))
+                        spans.append(
+                            TraceSpan(
+                                name="tts",
+                                start_ms=(tts_start - start) * 1000,
+                                end_ms=(tts_start - start) * 1000 + tts_duration,
+                                duration_ms=tts_duration,
+                                turn_index=turn_idx,
+                            )
+                        )
                     else:
                         caller_audio = AudioBuffer(data=b"\x00" * 3200, sample_rate=16000)
 
@@ -385,9 +387,7 @@ class Orchestrator:
                     # Record when caller audio finished sending.
                     # This gives evaluators (interruption, latency) a real
                     # anchor for "caller finished speaking" timing.
-                    caller_end_ms = (
-                        time.monotonic_ns() - handle.start_time_ns
-                    ) / 1_000_000
+                    caller_end_ms = (time.monotonic_ns() - handle.start_time_ns) / 1_000_000
                     handle.state.setdefault("_extra_events", []).append(
                         AgentEvent(
                             type=EventType.CALLER_AUDIO_END,
@@ -401,22 +401,23 @@ class Orchestrator:
                         if event.type == EventType.INTERRUPTION:
                             logger.debug(
                                 "Interruption detected at %.1fms in scenario '%s'",
-                                event.timestamp_ms, scenario.id,
+                                event.timestamp_ms,
+                                scenario.id,
                             )
 
                     turn_duration = (time.monotonic() - turn_start) * 1000
-                    spans.append(TraceSpan(
-                        name="turn_latency",
-                        start_ms=(turn_start - start) * 1000,
-                        end_ms=(turn_start - start) * 1000 + turn_duration,
-                        duration_ms=turn_duration,
-                        turn_index=turn_idx
-                    ))
+                    spans.append(
+                        TraceSpan(
+                            name="turn_latency",
+                            start_ms=(turn_start - start) * 1000,
+                            end_ms=(turn_start - start) * 1000 + turn_duration,
+                            duration_ms=turn_duration,
+                            turn_index=turn_idx,
+                        )
+                    )
 
                 # 4. Disconnect and get summary
-                summary = await session.disconnect() or CallSummary(
-                    duration_ms=0, turn_count=0
-                )
+                summary = await session.disconnect() or CallSummary(duration_ms=0, turn_count=0)
 
                 # Merge caller-timing events recorded during send_audio
                 extra_events = handle.state.get("_extra_events", [])
@@ -430,10 +431,7 @@ class Orchestrator:
                     transcript_parts = self._collapse_agent_transcript_events(summary.events)
                     transcript = TranscriptResult(
                         text=" ".join(transcript_parts),
-                        segments=[
-                            TranscriptSegment(role="agent", text=text)
-                            for text in transcript_parts
-                        ],
+                        segments=[TranscriptSegment(role="agent", text=text) for text in transcript_parts],
                         language="en",
                         duration_ms=summary.duration_ms,
                     )
@@ -445,8 +443,7 @@ class Orchestrator:
                         transcript = TranscriptResult(
                             text=" ".join(agent_transcript_parts),
                             segments=[
-                                TranscriptSegment(role="agent", text=text)
-                                for text in agent_transcript_parts
+                                TranscriptSegment(role="agent", text=text) for text in agent_transcript_parts
                             ],
                             language="en",
                             duration_ms=summary.duration_ms,
@@ -459,18 +456,21 @@ class Orchestrator:
                         )
                         transcript = await stt.transcribe(agent_audio_buf)
                         stt_duration = (time.monotonic() - stt_start) * 1000
-                        spans.append(TraceSpan(
-                            name="stt",
-                            start_ms=(stt_start - start) * 1000,
-                            end_ms=(stt_start - start) * 1000 + stt_duration,
-                            duration_ms=stt_duration
-                        ))
+                        spans.append(
+                            TraceSpan(
+                                name="stt",
+                                start_ms=(stt_start - start) * 1000,
+                                end_ms=(stt_start - start) * 1000 + stt_duration,
+                                duration_ms=stt_duration,
+                            )
+                        )
 
                 # 5b. Save audio to disk if output dir configured
                 output_dir = getattr(self._config.evaluation, "output_dir", None)
                 if output_dir and summary.agent_audio:
                     try:
                         from pathlib import Path
+
                         audio_buf = AudioBuffer(
                             data=summary.agent_audio,
                             sample_rate=connector.required_sample_rate,
@@ -508,9 +508,7 @@ class Orchestrator:
                         continue
 
                     try:
-                        metrics = await evaluator.evaluate(
-                            scenario, summary, transcript, eval_context
-                        )
+                        metrics = await evaluator.evaluate(scenario, summary, transcript, eval_context)
                         for metric in metrics:
                             all_metrics[metric.name] = metric
                     except Exception as e:
@@ -578,6 +576,7 @@ class Orchestrator:
 
             # Build failure_summary: which categories failed
             from decibench.evaluators.score import _METRIC_CATEGORIES
+
             failed_categories = set()
             for m in all_metrics.values():
                 if not m.passed and m.name in _METRIC_CATEGORIES:
@@ -585,12 +584,14 @@ class Orchestrator:
             failure_summary = sorted(failed_categories)
 
             # 8. Calculate per-scenario score
-            scenario_results = [EvalResult(
-                scenario_id=scenario.id,
-                passed=passed,
-                score=0.0,
-                metrics=all_metrics,
-            )]
+            scenario_results = [
+                EvalResult(
+                    scenario_id=scenario.id,
+                    passed=passed,
+                    score=0.0,
+                    metrics=all_metrics,
+                )
+            ]
             score, _ = self._scorer.calculate(
                 scenario_results,
                 self._config.scoring.weights,
@@ -607,15 +608,9 @@ class Orchestrator:
                 metrics=all_metrics,
                 failures=all_failures,
                 failure_summary=failure_summary,
-                latency={
-                    k: m.value for k, m in all_metrics.items()
-                    if "latency" in k or "ttfw" in k
-                },
+                latency={k: m.value for k, m in all_metrics.items() if "latency" in k or "ttfw" in k},
                 duration_ms=round(duration_ms, 1),
-                transcript=[
-                    {"role": seg.role, "text": seg.text}
-                    for seg in transcript.segments
-                ],
+                transcript=[{"role": seg.role, "text": seg.text} for seg in transcript.segments],
                 run_index=run_index,
                 spans=spans,
             )
@@ -635,6 +630,7 @@ class Orchestrator:
         turn. We keep the best transcript seen for each agent turn and flush it
         on explicit turn boundaries.
         """
+
         def finalize(current: str, utterances: list[str]) -> None:
             current = current.strip()
             if not current:
@@ -715,19 +711,14 @@ class Orchestrator:
         # Average numeric metrics
         averaged_metrics: dict[str, MetricResult] = {}
         for metric_name in base.metrics:
-            values = [
-                r.metrics[metric_name].value
-                for r in runs
-                if metric_name in r.metrics
-            ]
+            values = [r.metrics[metric_name].value for r in runs if metric_name in r.metrics]
             if values:
                 avg_value = sum(values) / len(values)
                 template = base.metrics[metric_name]
 
                 # Majority-vote pass/fail across runs (for metrics without thresholds)
                 pass_votes = sum(
-                    1 for r in runs
-                    if metric_name in r.metrics and r.metrics[metric_name].passed
+                    1 for r in runs if metric_name in r.metrics and r.metrics[metric_name].passed
                 )
                 majority_passed = pass_votes > len(runs) / 2
 
@@ -761,11 +752,7 @@ class Orchestrator:
 
         avg_score = sum(r.score for r in runs) / len(runs)
         averaged_cost: dict[str, float] = {}
-        cost_keys = {
-            key
-            for run in runs
-            for key in run.cost
-        }
+        cost_keys = {key for run in runs for key in run.cost}
         for key in cost_keys:
             averaged_cost[key] = sum(run.cost.get(key, 0.0) for run in runs) / len(runs)
 

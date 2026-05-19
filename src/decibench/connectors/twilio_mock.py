@@ -79,7 +79,7 @@ class TwilioMockConnector(BaseConnector):
         if not target.startswith(prefix):
             raise ValueError(f"Twilio connector expects twilio://<host:port/path>, got: {target!r}")
 
-        raw = target[len(prefix):]
+        raw = target[len(prefix) :]
         parsed = urlparse(f"ws://{raw}")
         ws_url = f"ws://{parsed.netloc}{parsed.path}"
 
@@ -89,7 +89,7 @@ class TwilioMockConnector(BaseConnector):
         # Also merge any twilio_* config keys as custom params
         for key, val in config.items():
             if key.startswith("twilio_param_") and val:
-                self._custom_params[key[len("twilio_param_"):]] = str(val)
+                self._custom_params[key[len("twilio_param_") :]] = str(val)
 
         self._stream_sid = _generate_sid("MZ")
         self._call_sid = _generate_sid("CA")
@@ -144,7 +144,9 @@ class TwilioMockConnector(BaseConnector):
 
         logger.info(
             "Twilio mock session: callSid=%s streamSid=%s params=%s",
-            self._call_sid, self._stream_sid, self._custom_params,
+            self._call_sid,
+            self._stream_sid,
+            self._custom_params,
         )
 
         handle = ConnectionHandle(

@@ -60,9 +60,8 @@ class FasterWhisperSTTProvider:
         if audio.sample_rate and audio.sample_rate != 16000:
             try:
                 import librosa
-                pcm_array = librosa.resample(
-                    pcm_array, orig_sr=audio.sample_rate, target_sr=16000
-                )
+
+                pcm_array = librosa.resample(pcm_array, orig_sr=audio.sample_rate, target_sr=16000)
             except ImportError:
                 # Fallback: simple linear interpolation resampling
                 ratio = 16000 / audio.sample_rate
@@ -71,7 +70,8 @@ class FasterWhisperSTTProvider:
                 pcm_array = np.interp(indices, np.arange(len(pcm_array)), pcm_array)
             logger.debug(
                 "Resampled audio from %dHz to 16kHz (%d samples)",
-                audio.sample_rate, len(pcm_array),
+                audio.sample_rate,
+                len(pcm_array),
             )
 
         # Run transcription
@@ -91,22 +91,24 @@ class FasterWhisperSTTProvider:
             if not text:
                 continue
             full_text_parts.append(text)
-            segments.append(TranscriptSegment(
-                role="agent",
-                text=text,
-                start_ms=seg.start * 1000.0,
-                end_ms=seg.end * 1000.0,
-                confidence=seg.avg_logprob if hasattr(seg, "avg_logprob") else 0.0,
-                words=[
-                    {
-                        "word": w.word,
-                        "start_ms": w.start * 1000.0,
-                        "end_ms": w.end * 1000.0,
-                        "probability": w.probability,
-                    }
-                    for w in (seg.words or [])
-                ],
-            ))
+            segments.append(
+                TranscriptSegment(
+                    role="agent",
+                    text=text,
+                    start_ms=seg.start * 1000.0,
+                    end_ms=seg.end * 1000.0,
+                    confidence=seg.avg_logprob if hasattr(seg, "avg_logprob") else 0.0,
+                    words=[
+                        {
+                            "word": w.word,
+                            "start_ms": w.start * 1000.0,
+                            "end_ms": w.end * 1000.0,
+                            "probability": w.probability,
+                        }
+                        for w in (seg.words or [])
+                    ],
+                )
+            )
 
         detected_language = info.language if info else "en"
 

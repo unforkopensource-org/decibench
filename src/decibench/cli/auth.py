@@ -27,9 +27,7 @@ def auth_set_cmd(provider: str) -> None:
     """Store a provider API key in the local keyring."""
     if not keyring_available():
         env_var = _env_var(provider)
-        raise click.ClickException(
-            f"System keyring is unavailable. Export {env_var}=... instead."
-        )
+        raise click.ClickException(f"System keyring is unavailable. Export {env_var}=... instead.")
 
     secret = click.prompt(f"Paste your {provider} API key", hide_input=True).strip()
     if not secret:
@@ -59,9 +57,7 @@ def auth_test_cmd(provider: str) -> None:
     """Check whether a provider key is configured and usable."""
     state = describe_secret(provider)
     if state.source == "missing":
-        raise click.ClickException(
-            f"No {provider} credential found. Run: decibench auth set {provider}"
-        )
+        raise click.ClickException(f"No {provider} credential found. Run: decibench auth set {provider}")
 
     if provider in ("vapi", "retell", "elevenlabs"):
         click.echo(
@@ -76,8 +72,7 @@ def auth_test_cmd(provider: str) -> None:
         raise click.ClickException(f"{provider} credential check failed: {exc}") from exc
 
     click.echo(
-        f"{get_provider_catalog(provider).display_name} credential looks good "
-        f"({len(models)} models visible)."
+        f"{get_provider_catalog(provider).display_name} credential looks good ({len(models)} models visible)."
     )
 
 

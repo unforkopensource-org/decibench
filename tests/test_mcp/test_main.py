@@ -9,6 +9,7 @@ import sys
 def test_main_module_importable():
     """python -m decibench.mcp should be importable."""
     from decibench.mcp.__main__ import main
+
     assert callable(main)
 
 

@@ -173,8 +173,14 @@ class WebSocketConnector(BaseConnector):
             # Explicit preset: apply its defaults, then let user config override
             preset = PROTOCOL_PRESETS[protocol]
             effective = {**preset}
-            for key in ("sample_rate", "ws_send_format", "ws_commit_message",
-                        "ws_setup_message", "ws_recv_timeout", "ws_silence_max"):
+            for key in (
+                "sample_rate",
+                "ws_send_format",
+                "ws_commit_message",
+                "ws_setup_message",
+                "ws_recv_timeout",
+                "ws_silence_max",
+            ):
                 if key in config and config[key] != "":
                     effective[key] = config[key]
         else:
@@ -206,8 +212,13 @@ class WebSocketConnector(BaseConnector):
 
         raw_setup = effective.get("ws_setup_message")
 
-        logger.info("Connecting to WebSocket: %s (protocol=%s, send_format=%s, sample_rate=%d)",
-                     url, protocol, self._send_format, self.required_sample_rate)
+        logger.info(
+            "Connecting to WebSocket: %s (protocol=%s, send_format=%s, sample_rate=%d)",
+            url,
+            protocol,
+            self._send_format,
+            self.required_sample_rate,
+        )
 
         # Stash url + headers so auto-detect's reconnect path doesn't need
         # to introspect `self._ws` (whose attribute layout has changed
@@ -386,7 +397,10 @@ class WebSocketConnector(BaseConnector):
 
         logger.info(
             "Applied preset '%s': send_format=%s, sample_rate=%d, recv_timeout=%.1f",
-            preset_name, self._send_format, self.required_sample_rate, self._recv_timeout,
+            preset_name,
+            self._send_format,
+            self.required_sample_rate,
+            self._recv_timeout,
         )
 
     async def send_audio(self, handle: ConnectionHandle, audio: AudioBuffer) -> None:
@@ -539,9 +553,7 @@ class WebSocketConnector(BaseConnector):
                 logger.debug("WebSocket close error (non-fatal)", exc_info=True)
             self._ws = None
 
-        explicit_turns = sum(
-            1 for e in self._events if e.type == EventType.TURN_END
-        )
+        explicit_turns = sum(1 for e in self._events if e.type == EventType.TURN_END)
         # Use explicit turn events if available, otherwise count send_audio calls
         turn_count = explicit_turns if explicit_turns > 0 else self._send_count
 

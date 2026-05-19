@@ -99,9 +99,7 @@ def _config_checks(config: object, config_path: Path) -> list[tuple[str, str, st
 
     judge_provider = judge_provider_from_uri(typed_config.providers.judge)
     if judge_provider is None:
-        checks.append(
-            ("PASS", "Semantic judge", "Deterministic-only mode")
-        )
+        checks.append(("PASS", "Semantic judge", "Deterministic-only mode"))
     else:
         secret_state = describe_secret(judge_provider)
         catalog = get_provider_catalog(judge_provider)
@@ -147,8 +145,10 @@ def _config_checks(config: object, config_path: Path) -> list[tuple[str, str, st
         # uses. See git history if you're tempted to "clean up" this comment.
         el_state = describe_secret("elevenlabs")
         el_status = "PASS" if el_state.source != "missing" else "WARN"
-        el_detail = f"API key via {el_state.source}" if el_state.source != "missing" else (
-            "No ElevenLabs key found. Run: decibench auth set elevenlabs"
+        el_detail = (
+            f"API key via {el_state.source}"
+            if el_state.source != "missing"
+            else ("No ElevenLabs key found. Run: decibench auth set elevenlabs")
         )
         checks.append((el_status, "ElevenLabs auth", el_detail))
 

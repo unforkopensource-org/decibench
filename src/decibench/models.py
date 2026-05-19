@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 # Audio primitives
 # ---------------------------------------------------------------------------
 
+
 class AudioEncoding(StrEnum):
     PCM_S16LE = "pcm_s16le"
     MULAW = "mulaw"
@@ -25,6 +26,7 @@ class AudioEncoding(StrEnum):
 
 class AudioBuffer(BaseModel):
     """Raw audio data with format metadata."""
+
     data: bytes
     sample_rate: int = 16000
     channels: int = 1
@@ -47,8 +49,10 @@ class AudioBuffer(BaseModel):
 # Scenario models
 # ---------------------------------------------------------------------------
 
+
 class Persona(BaseModel):
     """Caller persona configuration for a test scenario."""
+
     name: str = "Default"
     accent: str = "en-US"
     voice: str = ""  # TTS voice ID; empty = auto-select from accent
@@ -61,6 +65,7 @@ class Persona(BaseModel):
 
 class TurnExpectation(BaseModel):
     """Expected behavior from the agent on a given turn."""
+
     intent: str | None = None
     must_ask: list[str] = Field(default_factory=list)
     must_not_say: list[str] = Field(default_factory=list)
@@ -72,6 +77,7 @@ class TurnExpectation(BaseModel):
 
 class ConversationTurn(BaseModel):
     """A single turn in a scripted conversation."""
+
     role: Literal["caller", "agent"]
     text: str | None = None
     expect: TurnExpectation | None = None
@@ -80,6 +86,7 @@ class ConversationTurn(BaseModel):
 
 class ToolMock(BaseModel):
     """Mock definition for an agent's tool call during testing."""
+
     name: str
     when_called_with: dict[str, Any] = Field(default_factory=dict)
     returns: dict[str, Any] = Field(default_factory=dict)
@@ -88,6 +95,7 @@ class ToolMock(BaseModel):
 
 class SuccessCriterion(BaseModel):
     """A single success criterion for a scenario."""
+
     type: str  # task_completion | compliance | latency | no_hallucination | custom
     description: str | None = None
     check: Literal["deterministic", "llm_judge", "hybrid"] = "hybrid"
@@ -98,6 +106,7 @@ class SuccessCriterion(BaseModel):
 
 class VariantConfig(BaseModel):
     """Variant expansion configuration."""
+
     noise_levels: list[str] = Field(default_factory=lambda: ["clean"])
     accents: list[str] = Field(default_factory=lambda: ["en-US"])
     speeds: list[float] = Field(default_factory=lambda: [1.0])
@@ -105,6 +114,7 @@ class VariantConfig(BaseModel):
 
 class Scenario(BaseModel):
     """A complete test scenario definition."""
+
     id: str
     version: int = 1
     mode: Literal["scripted", "adaptive"] = "scripted"
@@ -133,6 +143,7 @@ class Scenario(BaseModel):
 # Connector event models
 # ---------------------------------------------------------------------------
 
+
 class EventType(StrEnum):
     AGENT_AUDIO = "agent_audio"
     AGENT_TRANSCRIPT = "agent_transcript"
@@ -147,6 +158,7 @@ class EventType(StrEnum):
 
 class AgentEvent(BaseModel):
     """An event emitted by an agent connector during a test."""
+
     type: EventType
     timestamp_ms: float
     data: dict[str, Any] = Field(default_factory=dict)
@@ -157,6 +169,7 @@ class AgentEvent(BaseModel):
 
 class ConnectionHandle(BaseModel):
     """Opaque handle for an active connection to a voice agent."""
+
     connector_type: str
     start_time_ns: int = Field(default_factory=time.monotonic_ns)
     state: dict[str, Any] = Field(default_factory=dict)
@@ -166,6 +179,7 @@ class ConnectionHandle(BaseModel):
 
 class TraceSpan(BaseModel):
     """Timing measurement for a specific component within a turn."""
+
     name: str  # e.g., 'asr', 'llm', 'tts', 'tool_call', 'turn_latency'
     start_ms: float
     end_ms: float
@@ -176,6 +190,7 @@ class TraceSpan(BaseModel):
 
 class CallSummary(BaseModel):
     """Summary of a completed call to a voice agent."""
+
     duration_ms: float
     turn_count: int
     agent_audio: bytes = b""
@@ -190,8 +205,10 @@ class CallSummary(BaseModel):
 # Evaluation result models
 # ---------------------------------------------------------------------------
 
+
 class MetricResult(BaseModel):
     """Result of a single metric evaluation."""
+
     name: str
     value: float
     unit: str = ""
@@ -202,6 +219,7 @@ class MetricResult(BaseModel):
 
 class EvalResult(BaseModel):
     """Complete evaluation result for a single scenario run."""
+
     scenario_id: str
     passed: bool
     score: float = Field(ge=0, le=100)
@@ -230,6 +248,7 @@ class EvalResult(BaseModel):
 
 class CostBreakdown(BaseModel):
     """Cost tracking for a test run."""
+
     tts: float = 0.0
     stt: float = 0.0
     judge: float = 0.0
@@ -242,6 +261,7 @@ class CostBreakdown(BaseModel):
 
 class SuiteResult(BaseModel):
     """Complete result of running a test suite."""
+
     suite: str
     target: str
     decibench_score: float = Field(ge=0, le=100)
@@ -256,7 +276,7 @@ class SuiteResult(BaseModel):
     judge_model: str = ""  # Which LLM judge was used, or "none"
     evaluation_mode: str = "deterministic"  # "deterministic" or "semantic"
     judge_provider: str = ""  # "anthropic", "openai", "gemini", or ""
-    config_hash: str = ""    # sha256 of the SECRET-REDACTED config dump
+    config_hash: str = ""  # sha256 of the SECRET-REDACTED config dump
     suite_version: str = ""  # version stamp from the suite's suite.toml
     timestamp: str = ""
     decibench_version: str = "1.0.0"
@@ -271,6 +291,7 @@ class SuiteResult(BaseModel):
     def compute_config_hash(cls, config_dict: dict[str, Any]) -> str:
         """Deterministic hash of config for reproducibility tracking."""
         import json
+
         serialized = json.dumps(config_dict, sort_keys=True, default=str)
         return hashlib.sha256(serialized.encode()).hexdigest()[:12]
 
@@ -279,8 +300,10 @@ class SuiteResult(BaseModel):
 # Transcript model
 # ---------------------------------------------------------------------------
 
+
 class TranscriptSegment(BaseModel):
     """A segment of transcribed speech."""
+
     role: Literal["caller", "agent"]
     text: str
     start_ms: float = 0.0
@@ -291,6 +314,7 @@ class TranscriptSegment(BaseModel):
 
 class TranscriptResult(BaseModel):
     """Result from STT transcription."""
+
     text: str
     segments: list[TranscriptSegment] = Field(default_factory=list)
     language: str = "en"
@@ -300,6 +324,7 @@ class TranscriptResult(BaseModel):
 # ---------------------------------------------------------------------------
 # Production call / replay models
 # ---------------------------------------------------------------------------
+
 
 class CallTrace(BaseModel):
     """Normalized production or test call trace for replay and analysis.

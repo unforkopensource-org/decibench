@@ -352,7 +352,7 @@ class RunStartRequest(BaseModel):
 
     target: str
     suite: str = "quick"
-    mode: str = "deterministic"   # deterministic | semantic | semantic-local | semantic-rag
+    mode: str = "deterministic"  # deterministic | semantic | semantic-local | semantic-rag
     parallel: int = 2
     output_dir: str | None = None
 
@@ -459,7 +459,7 @@ def rag_get_chunks(document_id: str) -> dict[str, Any]:
     chunks = store.get_document_chunks(doc.id)
     return {
         "document": doc.__dict__,
-        "chunks": [{"id": c.id, "text": c.text, "section_path": c.section_path} for c in chunks]
+        "chunks": [{"id": c.id, "text": c.text, "section_path": c.section_path} for c in chunks],
     }
 
 
@@ -583,10 +583,7 @@ def rag_synthesize_preview(body: RagSynthesizeRequest) -> dict[str, Any]:
         if result.written:
             preview_yaml = result.written[0].read_text()
 
-        return {
-            "result": result.as_dict(),
-            "yaml": preview_yaml
-        }
+        return {"result": result.as_dict(), "yaml": preview_yaml}
 
 
 # ----------------------------------------------------- run-start + progress
@@ -678,10 +675,13 @@ async def _execute_run(task_id: str, body: RunStartRequest) -> None:
         config.providers.judge = "none"
     elif body.mode in ("semantic", "semantic-local", "semantic-rag"):
         if not config.has_judge:
-            await _emit(task_id, {
-                "type": "error",
-                "message": f"mode={body.mode} requires a configured judge",
-            })
+            await _emit(
+                task_id,
+                {
+                    "type": "error",
+                    "message": f"mode={body.mode} requires a configured judge",
+                },
+            )
             return
 
     task = _run_tasks[task_id]
@@ -692,14 +692,19 @@ async def _execute_run(task_id: str, body: RunStartRequest) -> None:
 
     def on_progress(scenario_id: str, passed: bool, score: float, current: int, total: int) -> None:
         completed_scenarios.append(scenario_id)
-        asyncio.get_event_loop().create_task(_emit(task_id, {
-            "type": "scenario_done",
-            "scenario_id": scenario_id,
-            "passed": passed,
-            "score": score,
-            "current": current,
-            "total": total,
-        }))
+        asyncio.get_event_loop().create_task(
+            _emit(
+                task_id,
+                {
+                    "type": "scenario_done",
+                    "scenario_id": scenario_id,
+                    "passed": passed,
+                    "score": score,
+                    "current": current,
+                    "total": total,
+                },
+            )
+        )
 
     try:
         orch = Orchestrator(config)
@@ -714,13 +719,16 @@ async def _execute_run(task_id: str, body: RunStartRequest) -> None:
         task["status"] = "complete"
         task["run_id"] = run_id
         task["score"] = result.decibench_score
-        await _emit(task_id, {
-            "type": "complete",
-            "run_id": run_id,
-            "score": result.decibench_score,
-            "passed": result.passed,
-            "failed": result.failed,
-        })
+        await _emit(
+            task_id,
+            {
+                "type": "complete",
+                "run_id": run_id,
+                "score": result.decibench_score,
+                "passed": result.passed,
+                "failed": result.failed,
+            },
+        )
     except Exception as exc:
         task["status"] = "error"
         task["error"] = str(exc)
@@ -735,4 +743,5 @@ async def _emit(task_id: str, event: dict[str, Any]) -> None:
 
 def _slug(s: str) -> str:
     import re
+
     return re.sub(r"[^a-z0-9-]+", "-", s.lower()).strip("-")

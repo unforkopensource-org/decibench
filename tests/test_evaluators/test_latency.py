@@ -31,22 +31,28 @@ def _summary_with_events(turn_latencies_ms: list[float]) -> CallSummary:
     t = 0.0
     for latency_ms in turn_latencies_ms:
         # Caller speaks
-        events.append(AgentEvent(
-            type=EventType.TURN_END,
-            timestamp_ms=t,
-            data={"role": "caller"},
-        ))
+        events.append(
+            AgentEvent(
+                type=EventType.TURN_END,
+                timestamp_ms=t,
+                data={"role": "caller"},
+            )
+        )
         t += latency_ms
         # Agent responds
-        events.append(AgentEvent(
-            type=EventType.AGENT_AUDIO,
-            timestamp_ms=t,
-        ))
-        events.append(AgentEvent(
-            type=EventType.TURN_END,
-            timestamp_ms=t + 500,
-            data={"role": "agent"},
-        ))
+        events.append(
+            AgentEvent(
+                type=EventType.AGENT_AUDIO,
+                timestamp_ms=t,
+            )
+        )
+        events.append(
+            AgentEvent(
+                type=EventType.TURN_END,
+                timestamp_ms=t + 500,
+                data={"role": "agent"},
+            )
+        )
         t += 1000
 
     return CallSummary(
@@ -64,6 +70,7 @@ def _transcript() -> TranscriptResult:
 # ---------------------------------------------------------------------------
 # Core tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_latency_basic():

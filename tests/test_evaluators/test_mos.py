@@ -62,6 +62,7 @@ def _transcript() -> TranscriptResult:
 # Heuristic tests
 # ---------------------------------------------------------------------------
 
+
 def test_heuristic_normal_audio():
     """Normal audio should produce a reasonable heuristic estimate."""
     evaluator = MOSEvaluator()
@@ -113,6 +114,7 @@ def test_heuristic_capped_at_four():
 # ---------------------------------------------------------------------------
 # Full evaluate() flow
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_evaluate_no_audio():

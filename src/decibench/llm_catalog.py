@@ -72,10 +72,10 @@ _CATALOG: dict[str, ProviderCatalog] = {
 
 # Cost per million tokens (input, output) for the budget model of each provider.
 _BUDGET_COSTS: dict[str, tuple[float, float]] = {
-    "ollama": (0.00, 0.00),      # Free — runs locally
-    "gemini": (0.10, 0.40),      # gemini-2.5-flash-lite
-    "openai": (0.10, 0.40),      # gpt-4.1-nano
-    "anthropic": (1.00, 5.00),   # claude-haiku-4-5
+    "ollama": (0.00, 0.00),  # Free — runs locally
+    "gemini": (0.10, 0.40),  # gemini-2.5-flash-lite
+    "openai": (0.10, 0.40),  # gpt-4.1-nano
+    "anthropic": (1.00, 5.00),  # claude-haiku-4-5
 }
 
 # Average tokens per judge evaluation call (input + output).

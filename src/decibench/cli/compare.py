@@ -22,7 +22,8 @@ if TYPE_CHECKING:
 @click.option("--b", "target_b", required=True, help="Second agent target URI.")
 @click.option("--suite", "-s", default="quick", help="Test suite to run.")
 @click.option(
-    "--config", "-c",
+    "--config",
+    "-c",
     "config_path",
     type=click.Path(exists=True, path_type=Path),
     default=None,

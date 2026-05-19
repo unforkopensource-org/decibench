@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Provider protocols (interfaces)
 # ---------------------------------------------------------------------------
 
+
 @runtime_checkable
 class TTSProvider(Protocol):
     """Interface for text-to-speech providers."""
@@ -100,36 +101,44 @@ _judge_registry: dict[str, type[Any]] = {}
 # Registration decorators
 # ---------------------------------------------------------------------------
 
+
 def register_tts(scheme: str) -> Callable[[type[Any]], type[Any]]:
     """Register a TTS provider class for a URI scheme."""
+
     def decorator(cls: type[Any]) -> type[Any]:
         _tts_registry[scheme] = cls
         logger.debug("Registered TTS provider: %s -> %s", scheme, cls.__name__)
         return cls
+
     return decorator
 
 
 def register_stt(scheme: str) -> Callable[[type[Any]], type[Any]]:
     """Register an STT provider class for a URI scheme."""
+
     def decorator(cls: type[Any]) -> type[Any]:
         _stt_registry[scheme] = cls
         logger.debug("Registered STT provider: %s -> %s", scheme, cls.__name__)
         return cls
+
     return decorator
 
 
 def register_judge(scheme: str) -> Callable[[type[Any]], type[Any]]:
     """Register an LLM judge provider class for a URI scheme."""
+
     def decorator(cls: type[Any]) -> type[Any]:
         _judge_registry[scheme] = cls
         logger.debug("Registered judge provider: %s -> %s", scheme, cls.__name__)
         return cls
+
     return decorator
 
 
 # ---------------------------------------------------------------------------
 # Resolution functions
 # ---------------------------------------------------------------------------
+
 
 def _parse_scheme(uri: str) -> tuple[str, str]:
     """Extract scheme and remainder from a provider URI.

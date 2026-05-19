@@ -38,9 +38,7 @@ class CIReporter:
             for r in result.results:
                 if not r.passed:
                     failures_str = "; ".join(r.failures[:3])
-                    print(
-                        f"::warning title=Failed: {r.scenario_id}::{failures_str}"
-                    )
+                    print(f"::warning title=Failed: {r.scenario_id}::{failures_str}")
 
         # Summary for any CI system
         print(
@@ -60,4 +58,5 @@ class CIReporter:
 def _is_github_actions() -> bool:
     """Detect if running in GitHub Actions."""
     import os
+
     return os.environ.get("GITHUB_ACTIONS") == "true"

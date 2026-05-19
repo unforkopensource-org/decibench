@@ -78,10 +78,10 @@ def test_nearest_rank_known_values() -> None:
     """Hand-checked example to make the contract obvious."""
     values = sorted([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
     # rank = ceil(p/100 * N), 1-indexed
-    assert nearest_rank_percentile(values, 50) == 50.0   # rank 5
+    assert nearest_rank_percentile(values, 50) == 50.0  # rank 5
     assert nearest_rank_percentile(values, 95) == 100.0  # rank 10
     assert nearest_rank_percentile(values, 99) == 100.0  # rank 10
-    assert nearest_rank_percentile(values, 10) == 10.0   # rank 1
+    assert nearest_rank_percentile(values, 10) == 10.0  # rank 1
 
 
 def _reference_nearest_rank(sorted_samples: list[float], p: float) -> float:

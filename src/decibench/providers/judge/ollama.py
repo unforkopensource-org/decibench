@@ -37,6 +37,7 @@ DEFAULT_MODEL = RECOMMENDED_MODELS[0][0]
 def is_ollama_installed() -> bool:
     """Check if Ollama CLI is installed (available on PATH)."""
     import shutil
+
     return shutil.which("ollama") is not None
 
 
@@ -106,6 +107,7 @@ def pull_model(model: str, show_progress: bool = True) -> bool:
                 if not line:
                     continue
                 import json
+
                 try:
                     data = json.loads(line)
                 except json.JSONDecodeError:
@@ -125,9 +127,7 @@ def pull_model(model: str, show_progress: bool = True) -> bool:
                         bar = "\u2588" * filled + "\u2591" * (bar_width - filled)
                         size_mb = total / (1024 * 1024)
                         done_mb = completed / (1024 * 1024)
-                        sys.stdout.write(
-                            f"\r  {bar} {pct:5.1f}%  ({done_mb:.0f}/{size_mb:.0f} MB)  {status}"
-                        )
+                        sys.stdout.write(f"\r  {bar} {pct:5.1f}%  ({done_mb:.0f}/{size_mb:.0f} MB)  {status}")
                         sys.stdout.flush()
                         last_update = now
                 elif status != last_status and show_progress:

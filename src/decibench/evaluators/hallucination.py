@@ -42,13 +42,15 @@ class HallucinationEvaluator(BaseEvaluator):
 
         # Guard: skip if no transcript
         if not transcript.text or not transcript.text.strip():
-            return [MetricResult(
-                name="hallucination_rate",
-                value=0.0,
-                unit="%",
-                passed=True,
-                details={"skipped": True, "reason": "no_transcript"},
-            )]
+            return [
+                MetricResult(
+                    name="hallucination_rate",
+                    value=0.0,
+                    unit="%",
+                    passed=True,
+                    details={"skipped": True, "reason": "no_transcript"},
+                )
+            ]
 
         # Collect grounding context
         grounding = self._collect_grounding(scenario, summary)
@@ -77,14 +79,16 @@ class HallucinationEvaluator(BaseEvaluator):
             details["judge_reasoning"] = judge_reasoning
             details["judge_raw_output"] = judge_raw_output
 
-        return [MetricResult(
-            name="hallucination_rate",
-            value=round(hallucination_rate, 2),
-            unit="%",
-            passed=hallucination_rate <= threshold,
-            threshold=threshold,
-            details=details,
-        )]
+        return [
+            MetricResult(
+                name="hallucination_rate",
+                value=round(hallucination_rate, 2),
+                unit="%",
+                passed=hallucination_rate <= threshold,
+                threshold=threshold,
+                details=details,
+            )
+        ]
 
     @staticmethod
     def _collect_grounding(scenario: Scenario, summary: CallSummary) -> str:
@@ -139,10 +143,13 @@ Score 0-100:
 
 Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "..."}}"""
 
-        result = await judge.evaluate(prompt, {
-            "transcript": transcript.text,
-            "knowledge_base": grounding,
-        })
+        result = await judge.evaluate(
+            prompt,
+            {
+                "transcript": transcript.text,
+                "knowledge_base": grounding,
+            },
+        )
         return result
 
     @staticmethod
@@ -172,34 +179,35 @@ Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "..."}}"""
         entities: list[str] = []
 
         # Priority 1: Money amounts (most specific)
-        for m in re.finditer(r'\$\d+(?:,\d{3})*(?:\.\d{2})?', agent_text):
+        for m in re.finditer(r"\$\d+(?:,\d{3})*(?:\.\d{2})?", agent_text):
             if not _is_claimed(m.start(), m.end()):
                 entities.append(m.group())
                 claimed_spans.append((m.start(), m.end()))
 
         # Priority 2: Email addresses
-        for m in re.finditer(r'\b[\w.+-]+@[\w-]+\.[\w.]+\b', agent_text):
+        for m in re.finditer(r"\b[\w.+-]+@[\w-]+\.[\w.]+\b", agent_text):
             if not _is_claimed(m.start(), m.end()):
                 entities.append(m.group())
                 claimed_spans.append((m.start(), m.end()))
 
         # Priority 3: Order/reference numbers (ORD-123, REF-456)
-        for m in re.finditer(r'\b[A-Z]{2,5}-\d{3,}\b', agent_text):
+        for m in re.finditer(r"\b[A-Z]{2,5}-\d{3,}\b", agent_text):
             if not _is_claimed(m.start(), m.end()):
                 entities.append(m.group())
                 claimed_spans.append((m.start(), m.end()))
 
         # Priority 4: Times (2:00 PM)
-        for m in re.finditer(r'\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b', agent_text):
+        for m in re.finditer(r"\b\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\b", agent_text):
             if not _is_claimed(m.start(), m.end()):
                 entities.append(m.group())
                 claimed_spans.append((m.start(), m.end()))
 
         # Priority 5: Full dates (January 15, etc.)
         for m in re.finditer(
-            r'\b(?:January|February|March|April|May|June|July|August|'
-            r'September|October|November|December)\s+\d{1,2}\b',
-            agent_text, re.IGNORECASE,
+            r"\b(?:January|February|March|April|May|June|July|August|"
+            r"September|October|November|December)\s+\d{1,2}\b",
+            agent_text,
+            re.IGNORECASE,
         ):
             if not _is_claimed(m.start(), m.end()):
                 entities.append(m.group())
@@ -207,8 +215,9 @@ Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "..."}}"""
 
         # Priority 6: Day names
         for m in re.finditer(
-            r'\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b',
-            agent_text, re.IGNORECASE,
+            r"\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b",
+            agent_text,
+            re.IGNORECASE,
         ):
             if not _is_claimed(m.start(), m.end()):
                 entities.append(m.group())
@@ -216,7 +225,7 @@ Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "..."}}"""
 
         # Priority 7: Numbers (only if not already captured by a higher pattern)
         _trivial_numbers = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "100"}
-        for m in re.finditer(r'\b\d+(?:\.\d+)?\b', agent_text):
+        for m in re.finditer(r"\b\d+(?:\.\d+)?\b", agent_text):
             if not _is_claimed(m.start(), m.end()) and m.group() not in _trivial_numbers:
                 entities.append(m.group())
                 claimed_spans.append((m.start(), m.end()))
@@ -225,10 +234,7 @@ Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "..."}}"""
             return 100.0  # No factual claims found
 
         # Check each entity against grounding using normalized comparison
-        grounded = sum(
-            1 for entity in entities
-            if _is_entity_grounded(entity, ground_text)
-        )
+        grounded = sum(1 for entity in entities if _is_entity_grounded(entity, ground_text))
 
         return (grounded / len(entities)) * 100
 
@@ -238,10 +244,18 @@ Respond with JSON: {{"passed": true/false, "score": N, "reasoning": "..."}}"""
 # ---------------------------------------------------------------------------
 
 _MONTH_ABBREVS: dict[str, str] = {
-    "january": "jan", "february": "feb", "march": "mar",
-    "april": "apr", "may": "may", "june": "jun",
-    "july": "jul", "august": "aug", "september": "sep",
-    "october": "oct", "november": "nov", "december": "dec",
+    "january": "jan",
+    "february": "feb",
+    "march": "mar",
+    "april": "apr",
+    "may": "may",
+    "june": "jun",
+    "july": "jul",
+    "august": "aug",
+    "september": "sep",
+    "october": "oct",
+    "november": "nov",
+    "december": "dec",
 }
 
 
@@ -271,7 +285,7 @@ def _normalize_time(text: str) -> list[str]:
     """
     forms: list[str] = [text.lower().strip()]
     # Parse hour:minute AM/PM
-    m = re.match(r'(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?', text, re.IGNORECASE)
+    m = re.match(r"(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?", text, re.IGNORECASE)
     if m:
         hour = int(m.group(1))
         minute = int(m.group(2))
@@ -302,9 +316,10 @@ def _normalize_date(text: str) -> list[str]:
     """
     forms: list[str] = [text.lower()]
     m = re.match(
-        r'(January|February|March|April|May|June|July|August|'
-        r'September|October|November|December)\s+(\d{1,2})',
-        text, re.IGNORECASE,
+        r"(January|February|March|April|May|June|July|August|"
+        r"September|October|November|December)\s+(\d{1,2})",
+        text,
+        re.IGNORECASE,
     )
     if m:
         month_name = m.group(1).lower()
@@ -339,20 +354,21 @@ def _is_entity_grounded(entity: str, ground_text: str) -> bool:
         return any(form in ground_text for form in _normalize_money(entity))
 
     # Time: "2:00 PM" should match "14:00", "2 pm", etc.
-    if re.match(r'\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?', entity):
+    if re.match(r"\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?", entity):
         return any(form in ground_text for form in _normalize_time(entity))
 
     # Date: "January 15" should match "Jan 15", "1/15", etc.
     if re.match(
-        r'(?:January|February|March|April|May|June|July|August|'
-        r'September|October|November|December)\s+\d',
-        entity, re.IGNORECASE,
+        r"(?:January|February|March|April|May|June|July|August|"
+        r"September|October|November|December)\s+\d",
+        entity,
+        re.IGNORECASE,
     ):
         return any(form in ground_text for form in _normalize_date(entity))
 
     # Day names: case-insensitive (already handled by .lower())
     # Numbers: try with/without leading zeros
-    if re.match(r'^\d+$', entity):
+    if re.match(r"^\d+$", entity):
         stripped = entity.lstrip("0") or "0"
         return stripped in ground_text or entity in ground_text
 

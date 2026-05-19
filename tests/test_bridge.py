@@ -246,18 +246,20 @@ async def test_bridge_audio_timestamps_follow_envelope_clock() -> None:
 
     async def scripted(ws: Any) -> None:
         await fake.connected_event.wait()
-        await ws.send(_envelope(
-            BridgeMessageType.CONNECTED,
-            {
-                "session_id": "sess-ts",
-                "audio": {
-                    "sample_rate": 16000,
-                    "encoding": "pcm_s16le",
-                    "channels": 1,
+        await ws.send(
+            _envelope(
+                BridgeMessageType.CONNECTED,
+                {
+                    "session_id": "sess-ts",
+                    "audio": {
+                        "sample_rate": 16000,
+                        "encoding": "pcm_s16le",
+                        "channels": 1,
+                    },
                 },
-            },
-            ts_ms=100.0,
-        ))
+                ts_ms=100.0,
+            )
+        )
         await ws.send(_envelope(BridgeMessageType.AGENT_TRANSCRIPT, {"text": "hello"}, ts_ms=140.0))
         await ws.send(_envelope(BridgeMessageType.AGENT_AUDIO, {"bytes": 4}, ts_ms=175.0))
         await ws.send(b"\x01\x00\x02\x00")

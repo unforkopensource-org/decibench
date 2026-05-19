@@ -42,13 +42,15 @@ class MOSEvaluator(BaseEvaluator):
         context: dict[str, Any],
     ) -> list[MetricResult]:
         if not summary.agent_audio:
-            return [MetricResult(
-                name="mos_ovrl",
-                value=0.0,
-                unit="",
-                passed=False,
-                details={"reason": "No agent audio to evaluate"},
-            )]
+            return [
+                MetricResult(
+                    name="mos_ovrl",
+                    value=0.0,
+                    unit="",
+                    passed=False,
+                    details={"reason": "No agent audio to evaluate"},
+                )
+            ]
 
         audio = AudioBuffer(data=summary.agent_audio, sample_rate=16000)
         threshold = context.get("mos_threshold", 4.0)
@@ -73,15 +75,23 @@ class MOSEvaluator(BaseEvaluator):
 
         if method == "dnsmos":
             if "sig" in scores:
-                results.append(MetricResult(
-                    name="mos_sig", value=round(float(scores["sig"]), 2),
-                    unit="/5.0", passed=True,
-                ))
+                results.append(
+                    MetricResult(
+                        name="mos_sig",
+                        value=round(float(scores["sig"]), 2),
+                        unit="/5.0",
+                        passed=True,
+                    )
+                )
             if "bak" in scores:
-                results.append(MetricResult(
-                    name="mos_bak", value=round(float(scores["bak"]), 2),
-                    unit="/5.0", passed=True,
-                ))
+                results.append(
+                    MetricResult(
+                        name="mos_bak",
+                        value=round(float(scores["bak"]), 2),
+                        unit="/5.0",
+                        passed=True,
+                    )
+                )
 
         return results
 
@@ -90,6 +100,7 @@ class MOSEvaluator(BaseEvaluator):
         # Attempt 1: speechmos package (best option)
         try:
             from speechmos import dnsmos
+
             signal = np.frombuffer(audio.data, dtype=np.int16).astype(np.float32) / 32768.0
             if len(signal) < 16000:  # Need at least 1 second
                 return self._heuristic(audio), "heuristic"
@@ -109,6 +120,7 @@ class MOSEvaluator(BaseEvaluator):
             from pathlib import Path
 
             import onnxruntime as ort
+
             model_path = Path.home() / ".cache" / "decibench" / "dnsmos" / "sig_bak_ovrl.onnx"
             if model_path.exists():
                 session = ort.InferenceSession(str(model_path))
@@ -149,7 +161,7 @@ class MOSEvaluator(BaseEvaluator):
                 "warning": "empty_audio",
             }
 
-        rms = np.sqrt(np.mean(signal ** 2))
+        rms = np.sqrt(np.mean(signal**2))
         if rms < 10:
             return {
                 "ovrl": 1.0,

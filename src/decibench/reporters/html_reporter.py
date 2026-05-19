@@ -32,6 +32,7 @@ class HTMLReporter:
 # Score helpers
 # ---------------------------------------------------------------------------
 
+
 def _score_color(score: float) -> str:
     if score >= 80:
         return "#10b981"
@@ -88,6 +89,7 @@ _RADAR_SHORT = {
 # ---------------------------------------------------------------------------
 # SVG chart generators
 # ---------------------------------------------------------------------------
+
 
 def _gauge_svg(score: float) -> str:
     """SVG semicircular gauge for the DeciBench score."""
@@ -170,8 +172,7 @@ def _radar_svg(categories: dict[str, float]) -> str:
     for i in range(n):
         x, y = pt(i, vals[i])
         p.append(
-            f'  <circle cx="{x:.1f}" cy="{y:.1f}" r="4"'
-            f' fill="#6366f1" stroke="#18181b" stroke-width="2"/>'
+            f'  <circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="#6366f1" stroke="#18181b" stroke-width="2"/>'
         )
 
     # Labels
@@ -256,15 +257,13 @@ def _latency_svg(results: list[EvalResult]) -> str:
             f' font-family="system-ui,sans-serif">{val:.0f}ms</text>'
         )
 
-    return (
-        f'<svg viewBox="0 0 {svg_w} {svg_h}" class="latency-chart">\n'
-        + "\n".join(p) + "\n</svg>"
-    )
+    return f'<svg viewBox="0 0 {svg_w} {svg_h}" class="latency-chart">\n' + "\n".join(p) + "\n</svg>"
 
 
 # ---------------------------------------------------------------------------
 # HTML fragment generators
 # ---------------------------------------------------------------------------
+
 
 def _stat_cards_html(result: SuiteResult, avg_lat: float) -> str:
     pct = (result.passed / result.total_scenarios * 100) if result.total_scenarios else 0
@@ -339,7 +338,7 @@ def _scenario_cards_html(results: list[EvalResult]) -> str:
             f'<span class="{badge}">{status}</span></div>'
             f'<div class="sc-score" style="color:{c}">{r.score:.1f}</div>'
             f'<div class="sc-pills">{"".join(pills)}</div>'
-            f'{tags_div}</div></div>'
+            f"{tags_div}</div></div>"
         )
     return "\n".join(cards)
 
@@ -417,6 +416,7 @@ def _metric_summary_html(results: list[EvalResult]) -> str:
 # Data helpers
 # ---------------------------------------------------------------------------
 
+
 def _aggregate_categories(results: list[EvalResult]) -> dict[str, float]:
     """Fallback: aggregate metric results into category scores."""
     from decibench.evaluators.score import _METRIC_CATEGORIES, DecibenchScorer
@@ -438,12 +438,14 @@ def _aggregate_categories(results: list[EvalResult]) -> dict[str, float]:
 # Main HTML template builder
 # ---------------------------------------------------------------------------
 
+
 def _build_html(result: SuiteResult) -> str:
     score = result.decibench_score
     cats = result.score_breakdown or _aggregate_categories(result.results)
 
-    lats = [r.metrics["turn_latency_p50_ms"].value for r in result.results
-            if "turn_latency_p50_ms" in r.metrics]
+    lats = [
+        r.metrics["turn_latency_p50_ms"].value for r in result.results if "turn_latency_p50_ms" in r.metrics
+    ]
     avg_lat = sum(lats) / len(lats) if lats else 0
     grade = _score_grade(score)
     sc = _score_color(score)

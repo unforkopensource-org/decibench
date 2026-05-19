@@ -24,12 +24,15 @@ from decibench.evaluators.score import DecibenchScorer
 from decibench.models import MetricResult
 
 
-@pytest.mark.parametrize("name,band_attr", [
-    ("turn_latency_p50_ms", "p50"),
-    ("turn_latency_p95_ms", "p95"),
-    ("turn_latency_p99_ms", "p99"),
-    ("ttfw_ms", "ttfw"),
-])
+@pytest.mark.parametrize(
+    "name,band_attr",
+    [
+        ("turn_latency_p50_ms", "p50"),
+        ("turn_latency_p95_ms", "p95"),
+        ("turn_latency_p99_ms", "p99"),
+        ("ttfw_ms", "ttfw"),
+    ],
+)
 def test_curve_passes_through_green_yellow_red(name: str, band_attr: str) -> None:
     """Score curve must pass through (green, 100), (yellow, 50), (red, 0)."""
     from decibench.config import ScoringConfig
@@ -42,17 +45,19 @@ def test_curve_passes_through_green_yellow_red(name: str, band_attr: str) -> Non
         m = MetricResult(name=name, value=value, unit="ms", passed=True)
         score = DecibenchScorer._normalize_metric(name, m, policies)
         assert math.isclose(score, expected, abs_tol=0.01), (
-            f"{name} at {value}ms scored {score}, expected {expected} "
-            f"(band={bands})"
+            f"{name} at {value}ms scored {score}, expected {expected} (band={bands})"
         )
 
 
-@pytest.mark.parametrize("name,band_attr", [
-    ("turn_latency_p50_ms", "p50"),
-    ("turn_latency_p95_ms", "p95"),
-    ("turn_latency_p99_ms", "p99"),
-    ("ttfw_ms", "ttfw"),
-])
+@pytest.mark.parametrize(
+    "name,band_attr",
+    [
+        ("turn_latency_p50_ms", "p50"),
+        ("turn_latency_p95_ms", "p95"),
+        ("turn_latency_p99_ms", "p99"),
+        ("ttfw_ms", "ttfw"),
+    ],
+)
 def test_curve_monotone_decreasing_in_value(name: str, band_attr: str) -> None:
     """Higher latency ⇒ never higher score. Sanity invariant."""
     from decibench.config import ScoringConfig

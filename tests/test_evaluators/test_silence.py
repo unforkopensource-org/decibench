@@ -54,6 +54,7 @@ def _make_tone_then_silence(tone_s: float, silence_s: float) -> bytes:
 # Edge cases
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_no_audio():
     """No agent audio → empty results."""
@@ -84,6 +85,7 @@ async def test_very_short_audio():
 # ---------------------------------------------------------------------------
 # Normal audio
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_continuous_tone_no_silence():
