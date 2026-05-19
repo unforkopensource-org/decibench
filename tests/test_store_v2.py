@@ -29,11 +29,11 @@ def test_store_v2_initialization(tmp_path: Path):
     with store._connect() as conn:
         # Check migrations table created
         row = conn.execute("SELECT MAX(version) as version FROM schema_migrations").fetchone()
-        assert row["version"] == 3
+        assert row["version"] == 4
 
         # Check meta table reflects latest schema
         meta_row = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
-        assert meta_row["value"] == "3"
+        assert meta_row["value"] == "4"
 
         # Check normalized tables exist
         tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
