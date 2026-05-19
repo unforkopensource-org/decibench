@@ -1,0 +1,52 @@
+id: realestate-didnt-fill-form-001
+version: 1
+mode: scripted
+description: Caller insists they didn't fill out any form
+tags:
+- pushback
+- objection
+metadata: {}
+persona:
+  name: Default
+  accent: en-US
+  voice: ''
+  speaking_speed: 1.0
+  patience_level: medium
+  background_noise: clean
+  noise_level_db: 15.0
+  behavior: {}
+conversation:
+- role: caller
+  text: I didn't fill out any form
+  expect: null
+  audio_overrides: {}
+- role: agent
+  text: null
+  expect:
+    intent: clarification
+    must_ask: []
+    must_not_say: []
+    must_include:
+    - I'm sorry to hear that
+    must_extract: {}
+    max_latency_ms: 1500
+    tone: null
+  audio_overrides: {}
+goal: ''
+success_criteria:
+- type: task_completion
+  description: ''
+  check: llm_judge
+  rule: null
+  threshold: null
+  p95_max_ms: null
+tool_mocks: []
+variants:
+  noise_levels:
+  - clean
+  accents:
+  - en-US
+  speeds:
+  - 1.0
+timeout_seconds: 60
+max_turns: 6

@@ -4,6 +4,7 @@ import { useRun } from '../api'
 import type { MetricResult, EvalResult } from '../api'
 import ErrorBox from '../components/ErrorBox.vue'
 import Spinner from '../components/Spinner.vue'
+import ModeBadge from '../components/ModeBadge.vue'
 import { formatDuration, formatScore, formatTimestamp } from '../format'
 
 const props = defineProps<{ runId: string }>()
@@ -446,11 +447,9 @@ function getAgentText(er: EvalResult): string {
               <h1 class="text-xl font-bold text-white">{{ data.suite }}</h1>
               <span class="text-ink-500">&rarr;</span>
               <span class="text-sm text-ink-400 truncate max-w-xs">{{ data.target }}</span>
-              <span
-                class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                :class="isSemantic ? 'bg-violet-500/20 text-violet-300 ring-1 ring-violet-400/30' : 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30'"
-              >
-                {{ isSemantic ? `Semantic · ${data.judge_model}` : 'Deterministic' }}
+              <ModeBadge :mode="data.evaluation_mode || 'deterministic'" :suite="data.suite" />
+              <span v-if="data.evaluation_mode === 'semantic' && data.judge_model" class="text-[10px] text-violet-300 font-medium">
+                {{ data.judge_model }}
               </span>
             </div>
             <div class="mt-2">

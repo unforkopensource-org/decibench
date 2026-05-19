@@ -34,7 +34,17 @@ class BaseEvaluator(ABC):
 
     @property
     def requires_audio(self) -> bool:
-        """Whether this evaluator requires raw audio bytes."""
+        """Whether this evaluator requires raw agent audio bytes."""
+        return False
+
+    @property
+    def requires_events(self) -> bool:
+        """Whether this evaluator needs the connector event stream.
+
+        Imported call traces always carry events; live runs without a
+        connector event stream (synthetic / replay) may omit them. Evaluators
+        like ``latency`` and ``interruption`` declare ``True`` here.
+        """
         return False
 
     @abstractmethod

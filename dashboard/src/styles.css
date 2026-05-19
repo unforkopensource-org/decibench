@@ -74,6 +74,23 @@
     @apply pill bg-ink-100 text-ink-600;
   }
 
+  /* ── Mode Chips ── */
+  .mode-chip-deterministic {
+    @apply bg-slate-100 text-slate-700 ring-1 ring-slate-200/60;
+  }
+
+  .mode-chip-semantic {
+    @apply bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200/60;
+  }
+
+  .mode-chip-semantic-rag {
+    @apply bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200/60;
+  }
+
+  .mode-chip-semantic-local {
+    @apply bg-violet-100 text-violet-700 ring-1 ring-violet-200/60;
+  }
+
   /* ── Buttons ── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150;

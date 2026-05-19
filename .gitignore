@@ -13,6 +13,17 @@ results/
 .env
 .env.*
 !/decibench.toml.example
+*.key
+*.pem
+secrets.json
+*.json.bak
+
+# Ignore all markdown files by default to keep the repo clean
+*.md
+# But always include the main README
+!README.md
+!CONTRIBUTING.md
+!CHANGELOG.md
 
 # Node.js
 **/node_modules/
@@ -30,3 +41,12 @@ debug_output.log
 
 # Local project config
 decibench.toml
+
+# Test + coverage artifacts
+.coverage
+htmlcov/
+
+# Guard against re-introducing the dev-side scenarios duplicate. The canonical
+# home is src/decibench/scenarios/suites/ and tests/test_scenarios_canonical.py
+# fails if anything reappears here.
+/scenarios/

@@ -22,7 +22,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class ImportedCallEvaluator:
-    """Runs a suite of evaluators on an imported offline CallTrace."""
+    """Runs a suite of evaluators on an imported offline CallTrace.
+
+    Prefer constructing through :meth:`from_config` so the evaluator stack is
+    the canonical :func:`decibench.evaluators.standard_stack` set — the same
+    list the live ``Orchestrator`` uses. This guarantees a call evaluated
+    offline gets the same Decibench Score as the same call run live.
+    """
 
     def __init__(
         self,
@@ -33,6 +39,33 @@ class ImportedCallEvaluator:
         self._evaluators = evaluators
         self._config = config
         self._judge = judge
+
+    @classmethod
+    def from_config(
+        cls,
+        config: DecibenchConfig,
+        judge: Any | None = None,
+        *,
+        has_audio: bool = False,
+    ) -> ImportedCallEvaluator:
+        """Build with the canonical evaluator stack.
+
+        Imported call traces rarely carry raw audio bytes (importers normalize
+        events and transcript, not waveforms), so ``has_audio=False`` is the
+        default. ``has_events=True`` because every importer produces an event
+        stream. Judge availability follows the passed-in ``judge``.
+        """
+        from decibench.evaluators import standard_stack
+
+        return cls(
+            evaluators=standard_stack(
+                has_audio=has_audio,
+                has_events=True,
+                has_judge=judge is not None,
+            ),
+            config=config,
+            judge=judge,
+        )
 
     async def evaluate_trace(self, trace: CallTrace, scenario: Scenario | None = None) -> EvalResult:
         """Evaluate a single CallTrace."""

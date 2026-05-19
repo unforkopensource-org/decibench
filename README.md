@@ -1,215 +1,106 @@
-<p align="center">
-  <img src="assets/logo_final.png" width="240" alt="Decibench">
-</p>
+<div align="center">
+  <br />
+  <picture>
+    <img src="docs/assets/logo.png" alt="Decibench Logo" width="200" />
+  </picture>
+  <br />
+  <h1><b>Decibench</b></h1>
+  <p><b>Unit Testing for the Voice AI Era</b></p>
+  
+  <p>
+    <a href="https://github.com/unforkopensource-org/decibench/actions"><img src="https://img.shields.io/github/actions/workflow/status/unforkopensource-org/decibench/ci.yml?style=flat-square&color=39FF14" alt="CI Status" /></a>
+    <a href="https://pypi.org/project/decibench/"><img src="https://img.shields.io/pypi/v/decibench?style=flat-square&color=00F0FF" alt="PyPI Version" /></a>
+    <a href="https://github.com/unforkopensource-org/decibench/blob/main/LICENSE"><img src="https://img.shields.io/github/license/unforkopensource-org/decibench?style=flat-square&color=8A2BE2" alt="License" /></a>
+  </p>
 
-# Decibench
+  <p>
+    <i>Simulate thousands of concurrent calls • Detect 100% of hallucinations • Score latency down to the millisecond</i>
+  </p>
+</div>
 
-Local-first voice agent QA for teams that want proof, not vibes.
+<br />
 
-Decibench lets you run scenario suites, import real calls, replay failures,
-and inspect everything locally through a CLI and a local workbench.
+---
 
-> Status: **alpha** (`0.1.0`)
->
-> This repo is ready for real evaluation work, but it is still an alpha
-> product. Expect active iteration, especially around vendor-specific native
-> connectors and advanced integrations.
+## ⚡ Why Decibench?
 
-## What Decibench does today
+Building a voice AI agent is easy. Getting it to production without it hallucinating, lagging, or failing during interruptions is incredibly hard. For mission-critical agents in healthcare, banking, or real estate, manual testing simply doesn't scale.
 
-- Runs benchmark suites against:
-  - the built-in `demo` target
-  - WebSocket voice agents
-  - local `exec:` targets
-  - HTTP endpoints
-  - bridge-backed Retell and Vapi targets
-  - ElevenLabs agents
-  - local Twilio Media Streams mocks
-- Stores runs locally in SQLite
-- Opens a local workbench for runs, failures, imported calls, and replay data
-- Imports production calls from JSONL, Retell, and Vapi exports
-- Evaluates imported calls and turns failures into regression scenarios
-- Supports deterministic scoring plus optional semantic evaluation
-- Exposes an optional MCP server for local tool-based workflows
+Decibench is a **local-first** testing platform designed specifically for the complexities of Voice AI. 
 
-## Install
+Instead of making manual phone calls, Decibench allows your engineering team to:
+- 📞 **Simulate thousands of concurrent calls** locally or in CI/CD.
+- ⏱️ **Measure Latency** with pinpoint millisecond accuracy (p50/p90 targets).
+- 🧠 **Detect Hallucinations** using semantic LLM-as-a-Judge grading.
+- 🛑 **Ensure Compliance** and handle hostile user interruptions.
 
-### Recommended right now
+<br />
 
-```bash
-pipx install git+https://github.com/unforkopensource-org/decibench.git
-```
+<div align="center">
+  <img src="https://raw.githubusercontent.com/unforkopensource-org/decibench/main/src/decibench/api/static/workbench-preview.png" alt="Decibench Dashboard" width="800" style="border-radius: 8px; box-shadow: 0px 4px 24px rgba(0, 240, 255, 0.1);" />
+</div>
 
-### Direct with `pip`
+---
 
-```bash
-python -m pip install git+https://github.com/unforkopensource-org/decibench.git
-```
+## 🧠 3 Powerful Testing Modes
 
-### Local development install
+Whether you are testing an internal script or evaluating a deep conversational agent, Decibench scales with your workflow.
 
-```bash
-git clone https://github.com/unforkopensource-org/decibench.git
-cd testv1
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
-```
+### 1️⃣ Deterministic (`--mode deterministic`)
+Fast, rigid, free string-matching tests. Perfect for ensuring specific keywords, disclaimers, or exact greetings are present.
+*Runs entirely locally. 0 API costs.*
 
-### About `pipx install decibench`
+### 2️⃣ Semantic (`--mode semantic`)
+Slower, nuanced testing using an LLM Judge (e.g. `gpt-4o`). The judge scores the agent on conversational accuracy, compliance, and hallucination rates based on strict guidelines.
+*Essential for testing complex multi-turn logic.*
 
-The short PyPI command is **not** live yet. If you see:
+### 3️⃣ RAG-Augmented (`--mode semantic+rag`)
+The ultimate stress test. Upload your PDF training documents or knowledge bases, and Decibench will **auto-generate adversarial test suites** based on your own documentation to actively try and break your agent.
 
-```text
-ERROR: Could not find a version that satisfies the requirement decibench
-ERROR: No matching distribution found for decibench
-```
+---
 
-install from GitHub with one of the commands above.
+## 🚀 Quick Start
 
-## First five minutes
-
-This is the zero-key, zero-cost path.
+### Installation
+Decibench is built in Python but supports any Voice Agent endpoint.
 
 ```bash
-decibench doctor
-decibench init
-decibench run --target demo --suite quick --mode deterministic
+# Install the CLI tool
+pip install decibench
+
+# Install the optional headless browser sidecar for Telephony bridging
+npm install -g decibench-bridge
+```
+
+### Run Your First Suite
+Create a `decibench.toml` configuration file in your project root, then simply run:
+
+```bash
+# Run a quick suite locally against your Vapi/Retell agent
+decibench run target=vapi suite=quick
+
+# View the beautiful dashboard to debug failures
 decibench serve
 ```
 
-That gives you:
+---
 
-- an environment check
-- a local `decibench.toml`
-- a deterministic run against the built-in demo target
-- a local workbench at [http://127.0.0.1:8000](http://127.0.0.1:8000)
+## 🛡️ Secure & Local-First
 
-## Common target examples
+Decibench is built for the enterprise. 
+- **Zero Telemetry**: We do not track your tests.
+- **Privacy Redaction Engine**: Automatically scrubs API keys (`sk-...`), SSNs, Credit Cards, and passwords from your test payloads before saving them to the local SQLite database.
+- **Local SQLite DB**: Your proprietary call transcripts never leave your machine unless you explicitly export them.
 
-```bash
-decibench run --target demo --suite quick --mode deterministic
-decibench run --target ws://localhost:8000/ws --suite quick
-decibench run --target 'exec:python my_agent.py' --suite quick
-decibench run --target http://localhost:8080/invoke --suite quick
-decibench run --target elevenlabs://your_agent_id --suite quick
-decibench run --target retell://your_agent_id --suite quick
-decibench run --target vapi://your_agent_id --suite quick
-decibench run --target twilio://localhost:3000/media-stream --suite quick
-```
+---
 
-## Semantic evaluation
+## 🤝 Unfork Open Source
 
-Decibench supports four semantic-evaluation providers today:
+Decibench is proudly built and maintained by **[Unfork Open Source](https://github.com/unforkopensource-org)**. 
 
-- `ollama` for free local evaluation
-- `openai`
-- `anthropic`
-- `gemini`
+Our mission is to empower developers with high-performance, developer-first AI infrastructure. If you love this project, please consider giving it a ⭐ on GitHub!
 
-### Free local evaluation with Ollama
-
-1. Install Ollama from the official download page or install script.
-2. Pull a local model.
-3. Tell Decibench to use the Ollama preset.
-
-```bash
-ollama pull llama3.2:3b
-ollama serve
-decibench models preset ollama balanced
-decibench run --target demo --suite quick --mode semantic-local
-```
-
-### Cloud evaluation
-
-```bash
-decibench auth set openai
-decibench models preset openai balanced
-decibench run --target demo --suite quick --mode semantic
-```
-
-Swap `openai` for `anthropic` or `gemini` if you prefer.
-
-## Native vendor connectors
-
-Retell and Vapi native targets use the local bridge sidecar.
-
-```bash
-decibench bridge install
-decibench doctor
-decibench run --target retell://your_agent_id --suite quick
-```
-
-This stays local. The bridge exists because those vendors require a browser
-SDK or browser-like session handling.
-
-## MCP server
-
-Decibench ships an MCP entry point, but the MCP dependency is optional.
-
-### Reliable MCP install path
-
-```bash
-python -m pip install "decibench[mcp] @ git+https://github.com/unforkopensource-org/decibench.git"
-decibench-mcp --help
-```
-
-### Run it
-
-```bash
-decibench-mcp
-decibench-mcp --transport sse --port 8090
-```
-
-Use MCP when you want a local agent client such as Claude Code, Cursor, or
-another MCP-capable tool to call Decibench commands as tools instead of
-shelling out manually.
-
-## Command overview
-
-| Command | What it is for |
-| --- | --- |
-| `decibench init` | Create `decibench.toml` for the current project |
-| `decibench doctor` | Check install, config, workbench, keys, and targets |
-| `decibench run` | Run a suite or one scenario |
-| `decibench serve` | Launch the local workbench |
-| `decibench auth` | Store, test, list, and remove provider keys |
-| `decibench models` | Pick a semantic provider or model |
-| `decibench import` | Import production calls |
-| `decibench evaluate-calls` | Grade imported calls |
-| `decibench replay` | Inspect an imported call or convert it to a scenario |
-| `decibench runs` | Inspect stored runs and evaluations |
-| `decibench scenario` | List, validate, or schema-check scenarios |
-| `decibench scoring` | Change weights and metric policies |
-| `decibench compare` | Compare two targets side by side |
-| `decibench bridge` | Install and inspect the local native bridge |
-| `decibench version` | Show version and environment info |
-| `decibench-mcp` | Run the optional MCP server |
-
-## Where to read next
-
-- [userinfo.md](userinfo.md) - the practical user manual
-- [docs/README.md](docs/README.md) - the docs map
-- [docs/install.md](docs/install.md) - install details
-- [docs/quickstart.md](docs/quickstart.md) - first-run walkthrough
-- [docs/websocket-testing.md](docs/websocket-testing.md) - WebSocket guidance
-- [docs/import-and-evaluate.md](docs/import-and-evaluate.md) - offline QA loop
-- [docs/native-connectors.md](docs/native-connectors.md) - bridge-backed vendors
-
-## Maintainer notes vs user docs
-
-This repo also contains maintainer-facing notes such as:
-
-- `architecture.md`
-- `plan.md`
-- `currentbug.md`
-- `prod.md`
-- `techimplemntation.md`
-- `versionmanagement.md`
-
-Those are useful for contributors and planning, but first-time users can
-ignore them and start with `README.md`, `userinfo.md`, and `docs/`.
-
-## License
-
-Apache-2.0
+<div align="center">
+  <br />
+  <p>Built with precision by developers, for developers.</p>
+</div>

@@ -155,6 +155,7 @@ class BridgeClient:
         self._connected_event = asyncio.Event()
         self._disconnected_event = asyncio.Event()
         self._connected_payload: dict[str, Any] = {}
+        self._token = uuid.uuid4().hex
 
     # ---------------------------------------------------------------- lifecycle
 
@@ -162,7 +163,7 @@ class BridgeClient:
         """Spawn the sidecar and open the WebSocket."""
         cmd = self._sidecar_command or _resolve_sidecar_command()
         # Pass port=0 so the sidecar binds to a free ephemeral port.
-        env = {**os.environ, "DECIBENCH_BRIDGE_PORT": "0"}
+        env = {**os.environ, "DECIBENCH_BRIDGE_PORT": "0", "DECIBENCH_BRIDGE_TOKEN": self._token}
         logger.info("Starting Decibench bridge sidecar: %s", " ".join(cmd))
         self._proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -314,7 +315,7 @@ class BridgeClient:
                 "Install with `pip install websockets>=14.1`.",
             ) from exc
 
-        url = f"ws://127.0.0.1:{self._port}/"
+        url = f"ws://127.0.0.1:{self._port}/?token={self._token}"
         # Generous max size — agent audio frames can be a few KB but we never
         # expect anything larger than ~64KB per frame.
         self._ws = await websockets.connect(url, max_size=2**20, ping_interval=20)

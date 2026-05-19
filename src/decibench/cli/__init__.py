@@ -30,6 +30,7 @@ from decibench.cli.evaluate_cmd import evaluate_calls_cmd  # noqa: E402
 from decibench.cli.import_cmd import import_cmd  # noqa: E402
 from decibench.cli.init_cmd import init_cmd  # noqa: E402
 from decibench.cli.models import models_cmd  # noqa: E402
+from decibench.cli.rag import rag_cmd  # noqa: E402
 from decibench.cli.replay import replay_cmd  # noqa: E402
 from decibench.cli.run import run_cmd  # noqa: E402
 from decibench.cli.runs import runs_cmd  # noqa: E402
@@ -46,6 +47,7 @@ main.add_command(doctor_cmd, "doctor")
 main.add_command(import_cmd, "import")
 main.add_command(init_cmd, "init")
 main.add_command(models_cmd, "models")
+main.add_command(rag_cmd, "rag")
 main.add_command(replay_cmd, "replay")
 main.add_command(runs_cmd, "runs")
 main.add_command(scenario_cmd, "scenario")

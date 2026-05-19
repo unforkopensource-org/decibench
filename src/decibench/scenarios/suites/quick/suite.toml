@@ -1,0 +1,7 @@
+# Decibench built-in suite manifest.
+# Bumping `version` here signals to `decibench compare` that runs across this
+# bump are not directly comparable.
+
+version = "1.0.0"
+description = "Smoke suite — 10 scenarios covering greeting, booking, support, and farewell."
+deterministic_friendly = true

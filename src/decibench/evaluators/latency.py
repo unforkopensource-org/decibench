@@ -22,6 +22,10 @@ class LatencyEvaluator(BaseEvaluator):
     def name(self) -> str:
         return "latency"
 
+    @property
+    def requires_events(self) -> bool:
+        return True
+
     async def evaluate(
         self,
         scenario: Scenario,
@@ -38,12 +42,14 @@ class LatencyEvaluator(BaseEvaluator):
         # --- Time to First Word (TTFW) ---
         ttfw = self._calculate_ttfw(events)
         if ttfw is not None:
+            bands = context.get("latency_bands")
+            ttfw_max = bands.ttfw[1] if bands is not None else context.get("ttfw_max_ms", 800)
             results.append(MetricResult(
                 name="ttfw_ms",
                 value=round(ttfw, 1),
                 unit="ms",
-                passed=ttfw < context.get("ttfw_max_ms", 800),
-                threshold=context.get("ttfw_max_ms", 800),
+                passed=ttfw < ttfw_max,
+                threshold=ttfw_max,
             ))
 
         # --- Turn latency percentiles ---
@@ -55,16 +61,32 @@ class LatencyEvaluator(BaseEvaluator):
             p95 = self._percentile(sorted_latencies, 95)
             p99 = self._percentile(sorted_latencies, 99)
 
-            p50_max = context.get("p50_max_ms", 800)
-            p95_max = context.get("p95_max_ms", 1500)
-            p99_max = context.get("p99_max_ms", 3000)
+            # Source of truth: ScoringConfig.latency_bands. Pass thresholds
+            # equal the yellow_ms inflection point of the scorer's curve, so
+            # an agent at the threshold passes AND scores exactly 50/100 —
+            # the two contracts can't drift apart.
+            bands = context.get("latency_bands")
+            if bands is not None:
+                p50_max = bands.p50[1]
+                p95_max = bands.p95[1]
+                p99_max = bands.p99[1]
+            else:
+                # Fallback for tests that build context dicts manually.
+                p50_max = context.get("p50_max_ms", 800)
+                p95_max = context.get("p95_max_ms", 1500)
+                p99_max = context.get("p99_max_ms", 3000)
 
+            # p50 metric carries the raw per-turn samples so the suite-level
+            # aggregator in decibench.evaluators.aggregate can compute true
+            # percentiles over the merged distribution (rather than averaging
+            # per-scenario percentiles, which is statistically meaningless).
             results.append(MetricResult(
                 name="turn_latency_p50_ms",
                 value=round(p50, 1),
                 unit="ms",
                 passed=p50 <= p50_max,
                 threshold=p50_max,
+                details={"raw_samples": list(turn_latencies)},
             ))
             results.append(MetricResult(
                 name="turn_latency_p95_ms",

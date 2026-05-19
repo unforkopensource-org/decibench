@@ -62,6 +62,16 @@ def run_migrations(conn: sqlite3.Connection) -> None:
         )
         conn.commit()
 
+    if current_version < 4:
+        logger.info("Migrating Decibench Store to Schema v4 (RAG corpus)")
+        _migrate_v3_to_v4(conn)
+        conn.execute("INSERT INTO schema_migrations (version) VALUES (4)")
+        conn.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+            ("schema_version", "4"),
+        )
+        conn.commit()
+
 
 def _migrate_v1_to_v2(conn: sqlite3.Connection) -> None:
     """Migrate from v1 (JSON mostly) to v2 (normalized dashboards tables)."""
@@ -232,4 +242,51 @@ def _migrate_v2_to_v3(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_call_evaluation_metrics_evaluation_id "
         "ON call_evaluation_metrics(evaluation_id)"
+    )
+
+
+def _migrate_v3_to_v4(conn: sqlite3.Connection) -> None:
+    """Add RAG corpus tables: rag_documents + rag_chunks.
+
+    The schema is intentionally simple — vector index extension is NOT
+    required at v1 scale. Cosine k-NN is computed in pure Python against
+    the BLOB-stored embeddings. The interface in decibench.rag.store is
+    abstracted so a vector-DB backend can swap in later.
+    """
+    conn.execute("PRAGMA foreign_keys = ON")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rag_documents (
+            id TEXT PRIMARY KEY,             -- sha256 of file content (idempotent re-ingest)
+            source_path TEXT NOT NULL,
+            title TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            ingested_at TEXT NOT NULL,
+            bytes INTEGER NOT NULL,
+            embedding_provider TEXT NOT NULL,
+            sha256 TEXT NOT NULL
+        )
+        """
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rag_chunks (
+            id TEXT PRIMARY KEY,
+            document_id TEXT NOT NULL,
+            ordinal INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            embedding BLOB NOT NULL,         -- numpy float32 buffer
+            metadata TEXT NOT NULL,          -- JSON (section_path, dim, etc.)
+            FOREIGN KEY(document_id) REFERENCES rag_documents(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_rag_chunks_document_id ON rag_chunks(document_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_rag_documents_ingested_at ON rag_documents(ingested_at)"
     )

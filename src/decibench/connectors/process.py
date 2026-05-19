@@ -48,8 +48,13 @@ class ProcessConnector(BaseConnector):
         self._recorded_audio = bytearray()
         self._events: list[AgentEvent] = []
         self._stderr_data = bytearray()
+        self._send_speed: float = 1.0
 
     async def connect(self, target: str, config: dict[str, Any]) -> ConnectionHandle:
+        # ``send_speed`` controls how fast we deliver caller audio chunks
+        # relative to real-time (1.0 = real-time, 0 = burst). Earlier
+        # versions hard-coded 2x real-time which biased latency low.
+        self._send_speed = float(config.get("send_speed", 1.0))
         # Parse command from target: exec:command or exec:"command with args"
         command = target
         if command.startswith("exec:"):
@@ -89,18 +94,23 @@ class ProcessConnector(BaseConnector):
             msg = "Process not started — call connect() first"
             raise RuntimeError(msg)
 
-        # Write audio to stdin in chunks with real-time pacing
-        # Chunk duration = chunk_bytes / (sample_rate * 2 bytes_per_sample)
+        # Write audio to stdin in chunks at the configured pace. Default 1.0
+        # = real-time. Earlier versions hard-coded 2x real-time, which let
+        # 1s of caller speech reach the agent in 500ms wall-time and biased
+        # every downstream latency measurement low.
         sample_rate = audio.sample_rate or 16000
         chunk_duration = _CHUNK_BYTES / (sample_rate * 2)  # seconds per chunk
+        sleep_per_chunk = (
+            chunk_duration / self._send_speed if self._send_speed > 0 else 0.0
+        )
 
         data = audio.data
         for offset in range(0, len(data), _CHUNK_BYTES):
             chunk = data[offset : offset + _CHUNK_BYTES]
             self._process.stdin.write(chunk)
             await self._process.stdin.drain()
-            # Pace at ~real-time so latency measurements are accurate
-            await asyncio.sleep(chunk_duration * 0.5)  # 50% real-time for speed
+            if sleep_per_chunk > 0:
+                await asyncio.sleep(sleep_per_chunk)
 
         # Signal end of input for this turn (but don't close stdin yet)
 

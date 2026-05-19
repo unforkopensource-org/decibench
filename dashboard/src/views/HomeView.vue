@@ -106,7 +106,7 @@ function runBar(score: number): string {
           <!-- Feature pills -->
           <div class="mt-8 flex flex-wrap gap-2 text-sm text-white/80">
             <span class="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5">100% local — no cloud</span>
-            <span class="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5">Deterministic + Semantic AI</span>
+            <span class="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5">Deterministic, Semantic &amp; RAG</span>
             <span class="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5">Import &rarr; Evaluate &rarr; Replay</span>
             <span class="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5">Retell &middot; Vapi &middot; Custom</span>
             <span class="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5">Open source &middot; Apache 2.0</span>
@@ -331,14 +331,14 @@ function runBar(score: number): string {
       <div class="section-shell py-20">
         <div class="max-w-3xl">
           <div class="eyebrow text-sage-600">What it measures</div>
-          <h2 class="section-title mt-3">Two evaluation modes. One quality score.</h2>
+          <h2 class="section-title mt-3">Three evaluation modes. One quality score.</h2>
           <p class="section-copy">
-            Start free with deterministic metrics. Add an LLM judge when you need deeper understanding.
-            Both feed into the same 0-100 Decibench score.
+            Start free with deterministic metrics. Add an LLM judge when you need deeper understanding. Or use RAG synthesis to test knowledge boundaries.
+            All feed into the same 0-100 Decibench score.
           </p>
         </div>
 
-        <div class="mt-10 grid gap-6 lg:grid-cols-2">
+        <div class="mt-10 grid gap-6 lg:grid-cols-3">
           <!-- Deterministic -->
           <div class="card p-6">
             <div class="flex items-center gap-3 mb-4">
@@ -403,6 +403,39 @@ function runBar(score: number): string {
               <p class="text-xs text-violet-700 leading-relaxed">
                 <strong>Supported providers:</strong> Gemini (cheapest), OpenAI, Anthropic. Auto-detects your API key and picks the budget model.
                 Run with <code class="bg-violet-100 px-1 py-0.5 rounded text-violet-900">--mode semantic</code>
+              </p>
+            </div>
+          </div>
+
+          <!-- Semantic + RAG -->
+          <div class="card p-6 ring-2 ring-emerald-200/60">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100">
+                <svg class="h-5 w-5 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+              </span>
+              <div>
+                <h3 class="text-lg font-semibold text-ink-950">Semantic + RAG</h3>
+                <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Knowledge-bound synthesis</span>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <svg class="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                <div><span class="text-sm font-medium text-ink-900">Auto-synthesis</span><span class="text-sm text-ink-500"> &mdash; Transforms your Markdown/PDF docs into comprehensive scenario suites.</span></div>
+              </div>
+              <div class="flex items-start gap-3">
+                <svg class="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                <div><span class="text-sm font-medium text-ink-900">Boundary testing</span><span class="text-sm text-ink-500"> &mdash; Tests if your agent hallucinates beyond provided context.</span></div>
+              </div>
+              <div class="flex items-start gap-3">
+                <svg class="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                <div><span class="text-sm font-medium text-ink-900">Grounded evaluations</span><span class="text-sm text-ink-500"> &mdash; The AI judge scores based strictly on the injected corpus.</span></div>
+              </div>
+            </div>
+            <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3">
+              <p class="text-xs text-emerald-700 leading-relaxed">
+                <strong>Knowledge integration:</strong> Ingest files directly from the dashboard and run synthesis.
+                Run with <code class="bg-emerald-100 px-1 py-0.5 rounded text-emerald-900">--mode semantic-rag</code>
               </p>
             </div>
           </div>

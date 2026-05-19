@@ -8,6 +8,7 @@ const isHome = computed(() => route.name === 'home')
 const isActiveHome = computed(() => route.name === 'home')
 const isActiveInbox = computed(() => route.name === 'inbox' || route.name === 'call' || route.name === 'evaluation')
 const isActiveRuns = computed(() => route.name === 'runs' || route.name === 'run')
+const isActiveRag = computed(() => route.name === 'rag' || route.name === 'rag_synthesize')
 const mainClass = computed(() =>
   isHome.value ? 'flex-1' : 'section-shell flex-1 py-6',
 )
@@ -72,6 +73,26 @@ const mainClass = computed(() =>
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               <span class="hidden md:inline">Runs</span>
             </RouterLink>
+            <RouterLink
+              to="/test"
+              class="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150"
+              :class="$route.name === 'test'
+                ? isHome ? 'bg-white text-ink-950' : 'bg-ink-950 text-white'
+                : isHome ? 'text-white/70 hover:bg-white/10 hover:text-white' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900'"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              <span class="hidden md:inline">Test</span>
+            </RouterLink>
+            <RouterLink
+              to="/rag"
+              class="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150"
+              :class="isActiveRag
+                ? isHome ? 'bg-white text-ink-950' : 'bg-ink-950 text-white'
+                : isHome ? 'text-white/70 hover:bg-white/10 hover:text-white' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900'"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a4 4 0 014 4v12H8a4 4 0 01-4-4z"/><path d="M4 16a4 4 0 014-4h12"/></svg>
+              <span class="hidden md:inline">Knowledge</span>
+            </RouterLink>
           </nav>
         </div>
 
@@ -79,7 +100,7 @@ const mainClass = computed(() =>
         <div class="flex items-center gap-2.5">
           <span class="rounded-md px-2 py-1 text-[11px] font-mono font-medium"
             :class="isHome ? 'bg-white/10 text-white/60 ring-1 ring-white/10' : 'bg-ink-50 text-ink-500 ring-1 ring-ink-200/60'"
-          >v0.1.0</span>
+          >v1.0.0</span>
           <a
             href="https://github.com/unforkopensource-org/decibench"
             target="_blank"

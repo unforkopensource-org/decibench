@@ -6,6 +6,9 @@ import FailureInbox from './views/FailureInbox.vue'
 import HomeView from './views/HomeView.vue'
 import RunDetail from './views/RunDetail.vue'
 import RunsList from './views/RunsList.vue'
+import TestAgent from './views/TestAgent.vue'
+import RagCorpus from './views/RagCorpus.vue'
+import RagSynthesize from './views/RagSynthesize.vue'
 
 // We use hash routing so the dashboard can be served from a single static
 // `index.html` by FastAPI without needing a server-side rewrite rule.
@@ -23,6 +26,9 @@ export const router = createRouter({
     },
     { path: '/runs', name: 'runs', component: RunsList },
     { path: '/runs/:runId', name: 'run', component: RunDetail, props: true },
+    { path: '/test', name: 'test', component: TestAgent },
+    { path: '/rag', name: 'rag', component: RagCorpus },
+    { path: '/rag/synthesize', name: 'rag_synthesize', component: RagSynthesize },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

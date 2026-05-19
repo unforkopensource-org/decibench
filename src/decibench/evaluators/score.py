@@ -200,7 +200,7 @@ class DecibenchScorer:
                 if category is None:
                     continue
 
-                normalized = self._normalize_metric(metric_name, metric)
+                normalized = self._normalize_metric(metric_name, metric, policies)
                 if category not in category_values:
                     category_values[category] = []
                 category_values[category].append(normalized)
@@ -220,7 +220,11 @@ class DecibenchScorer:
         return aggregated
 
     @staticmethod
-    def _normalize_metric(name: str, metric: MetricResult) -> float:
+    def _normalize_metric(
+        name: str,
+        metric: MetricResult,
+        policies: ScoringConfig | None = None,
+    ) -> float:
         """Normalize a metric value to 0-100 scale.
 
         Calibrated so that:
@@ -228,31 +232,25 @@ class DecibenchScorer:
         - A decent production agent scores 55-75
         - Excellent agents score 75-90
         - 90+ is world-class, nearly impossible
+
+        Latency metrics read their bands from ``policies.latency_bands`` so
+        the curve and the evaluator's pass threshold can never disagree.
+        Without a ``policies`` argument we fall back to the v1 defaults.
         """
+        from decibench.config import LatencyScoringConfig
+
+        bands = policies.latency_bands if policies is not None else LatencyScoringConfig()
         value = metric.value
 
-        # --- Latency: strict curves, users hang up after 2s ---
-        if name in ("turn_latency_p50_ms", "ttfw_ms"):
-            # 300ms = 100, 800ms = 50, 2000ms = 0
-            if value <= 300:
-                return 100.0
-            if value >= 2000:
-                return 0.0
-            return max(0, 100 - ((value - 300) / 1700 * 100))
+        # --- Latency: strict curves backed by ScoringConfig.latency_bands ---
+        if name in ("turn_latency_p50_ms",):
+            return LatencyScoringConfig.score_band(value, bands.p50)
+        if name == "ttfw_ms":
+            return LatencyScoringConfig.score_band(value, bands.ttfw)
         if name == "turn_latency_p95_ms":
-            # 500ms = 100, 1200ms = 50, 3000ms = 0
-            if value <= 500:
-                return 100.0
-            if value >= 3000:
-                return 0.0
-            return max(0, 100 - ((value - 500) / 2500 * 100))
+            return LatencyScoringConfig.score_band(value, bands.p95)
         if name == "turn_latency_p99_ms":
-            # 800ms = 100, 2000ms = 50, 5000ms = 0
-            if value <= 800:
-                return 100.0
-            if value >= 5000:
-                return 0.0
-            return max(0, 100 - ((value - 800) / 4200 * 100))
+            return LatencyScoringConfig.score_band(value, bands.p99)
         if name == "response_gap_avg_ms":
             # Sweet spot 300-600ms. >1500ms = 0
             if 300 <= value <= 600:

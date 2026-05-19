@@ -1,0 +1,46 @@
+name: Bug report
+description: Report something that's broken or behaves wrong.
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Decibench version
+      description: Output of `decibench version --verbose`.
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Exact command you ran
+      placeholder: decibench run --target ws://... --suite quick
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What actually happened
+    validations:
+      required: true
+  - type: textarea
+    id: seal
+    attributes:
+      label: Reproducibility seal (if available)
+      description: Paste the contents of `seal.json` from your `--output` dir. Secrets are redacted.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - score-drift (P0 — incorrect score)
+        - blocker (cannot proceed)
+        - normal
+        - minor
+    validations:
+      required: true

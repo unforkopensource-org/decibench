@@ -16,17 +16,22 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+import asyncio
+import json
+import uuid
+from datetime import UTC, datetime
+from datetime import UTC, datetime
+
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from decibench.config import load_config
-from decibench.evaluators.compliance import ComplianceEvaluator
-from decibench.evaluators.hallucination import HallucinationEvaluator
-from decibench.evaluators.task import TaskCompletionEvaluator
 from decibench.models import CallTrace, EvalResult, SuiteResult, TraceSpan
 from decibench.providers.registry import get_judge
+from decibench.rag import RagStore, ingest_paths, ingest_text, retrieve, synthesize_scenarios
+from decibench.rag.embed import CloudEgressForbidden
 from decibench.replay.evaluate import ImportedCallEvaluator
 from decibench.replay.scenario import trace_to_scenario_yaml
 from decibench.store import RunStore, default_store_path
@@ -66,7 +71,14 @@ def get_store() -> RunStore:
 
 
 def get_imported_call_evaluator() -> ImportedCallEvaluator:
-    """Build the default imported-call evaluator stack from on-disk config."""
+    """Build the default imported-call evaluator stack from on-disk config.
+
+    Resolves through :meth:`ImportedCallEvaluator.from_config` which pulls the
+    canonical :func:`decibench.evaluators.standard_stack` set — the same stack
+    the live ``Orchestrator`` uses. This was previously hand-curated to three
+    evaluators, producing a different score offline vs. online for the same
+    trace; v1 fixes that.
+    """
     config = load_config()
     judge = (
         get_judge(
@@ -79,12 +91,7 @@ def get_imported_call_evaluator() -> ImportedCallEvaluator:
         if config.has_judge
         else None
     )
-    evaluators = [
-        ComplianceEvaluator(),
-        HallucinationEvaluator(),
-        TaskCompletionEvaluator(),
-    ]
-    return ImportedCallEvaluator(evaluators, config, judge=judge)
+    return ImportedCallEvaluator.from_config(config, judge=judge)
 
 
 # ------------------------------------------------------------- response models
@@ -314,3 +321,420 @@ def get_stored_call_evaluation(evaluation_id: str) -> EvalResult:
 )
 def failure_inbox_stats() -> FailureInboxStats:
     return FailureInboxStats(**get_store().failure_inbox_stats())
+
+
+# ------------------------------------------------------------------ RAG API
+#
+# Single backend for the dashboard /rag/* screens, the CLI `decibench rag`
+# commands, and the MCP `rag_*` tools. No drift across surfaces.
+
+
+class RagIngestText(BaseModel):
+    """Body for POST /rag/ingest-text — paste-text path from the UI."""
+
+    text: str
+    title: str = "pasted-snippet"
+    cloud_confirm: bool = False
+
+
+class RagSynthesizeRequest(BaseModel):
+    """Body for POST /rag/synthesize — topics + suite slug."""
+
+    topics: list[str]
+    suite: str = "custom-rag"
+    out_dir: str | None = None
+
+
+class RunStartRequest(BaseModel):
+    """Body for POST /runs — kick off a run from the dashboard.
+
+    Field names mirror ``decibench run`` flags so users can copy-paste between
+    surfaces without re-learning vocabulary.
+    """
+
+    target: str
+    suite: str = "quick"
+    mode: str = "deterministic"   # deterministic | semantic | semantic-local | semantic-rag
+    parallel: int = 2
+    output_dir: str | None = None
+
+
+def _rag_store() -> RagStore:
+    return RagStore(default_store_path())
+
+
+@app.get("/rag/documents", summary="List ingested RAG documents")
+def rag_list_documents() -> dict[str, Any]:
+    docs = _rag_store().list_documents()
+    return {"documents": [d.__dict__ for d in docs]}
+
+
+@app.get("/rag/stats", summary="Corpus statistics")
+def rag_stats() -> dict[str, Any]:
+    config = load_config()
+    s = _rag_store().stats()
+    s["configured_embedder"] = config.rag.embedding
+    s["allow_cloud"] = config.rag.allow_cloud
+    return s
+
+
+@app.post("/rag/ingest-text", summary="Ingest a text snippet (paste-text path)")
+def rag_ingest_text(body: RagIngestText) -> dict[str, Any]:
+    config = load_config()
+    rag_cfg = config.rag
+    try:
+        result = ingest_text(
+            text=body.text,
+            title=body.title,
+            store=_rag_store(),
+            embedder_uri=rag_cfg.embedding,
+            allow_cloud=rag_cfg.allow_cloud or body.cloud_confirm,
+            target_tokens=rag_cfg.chunk_size_tokens,
+            overlap_tokens=rag_cfg.chunk_overlap_tokens,
+        )
+    except CloudEgressForbidden as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return result.as_dict()
+
+
+@app.post("/rag/ingest-files", summary="Ingest uploaded files (multipart)")
+async def rag_ingest_files(
+    files: list[UploadFile] = File(...),  # noqa: B008
+    cloud_confirm: bool = Form(False),
+) -> dict[str, Any]:
+    """Multipart upload — the browser drag-drop path lands here.
+
+    Files are written to a per-request temp directory and ingested via the
+    same ``ingest_paths`` function the CLI uses; the temp dir is cleaned
+    up regardless of success.
+    """
+    import tempfile
+    from pathlib import Path as _P
+
+    config = load_config()
+    rag_cfg = config.rag
+
+    with tempfile.TemporaryDirectory(prefix="decibench-upload-") as tmp:
+        paths: list[_P] = []
+        for f in files:
+            target = _P(tmp) / (f.filename or f"upload-{uuid.uuid4().hex[:8]}.txt")
+            data = await f.read()
+            target.write_bytes(data)
+            paths.append(target)
+        try:
+            result = ingest_paths(
+                paths,
+                store=_rag_store(),
+                embedder_uri=rag_cfg.embedding,
+                allow_cloud=rag_cfg.allow_cloud or cloud_confirm,
+                target_tokens=rag_cfg.chunk_size_tokens,
+                overlap_tokens=rag_cfg.chunk_overlap_tokens,
+            )
+        except CloudEgressForbidden as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return result.as_dict()
+
+
+@app.delete("/rag/documents/{document_id}", summary="Remove a single document")
+def rag_remove_document(document_id: str) -> dict[str, Any]:
+    store = _rag_store()
+    docs = [d for d in store.list_documents() if d.id.startswith(document_id)]
+    if not docs:
+        raise HTTPException(status_code=404, detail="document not found")
+    if len(docs) > 1:
+        raise HTTPException(status_code=400, detail="id prefix matches multiple — pass a longer id")
+    store.remove_document(docs[0].id)
+    return {"removed": docs[0].id}
+
+
+@app.get("/rag/chunks/{document_id}", summary="Get chunks for a document")
+def rag_get_chunks(document_id: str) -> dict[str, Any]:
+    store = _rag_store()
+    docs = [d for d in store.list_documents() if d.id.startswith(document_id)]
+    if not docs:
+        raise HTTPException(status_code=404, detail="document not found")
+    if len(docs) > 1:
+        raise HTTPException(status_code=400, detail="id prefix matches multiple")
+    
+    doc = docs[0]
+    chunks = store.get_document_chunks(doc.id)
+    return {
+        "document": doc.__dict__,
+        "chunks": [{"id": c.id, "text": c.text, "section_path": c.section_path} for c in chunks]
+    }
+
+
+@app.delete("/rag/documents", summary="Wipe the entire RAG corpus")
+def rag_remove_all() -> dict[str, Any]:
+    n = _rag_store().remove_all()
+    return {"removed": n}
+
+
+@app.get("/rag/search", summary="Debug retrieval — top-K chunks for a query")
+def rag_search_endpoint(query: str, k: int = 5) -> dict[str, Any]:
+    config = load_config()
+    try:
+        hits = retrieve(
+            query,
+            k=k,
+            store=_rag_store(),
+            embedder_uri=config.rag.embedding,
+            allow_cloud=config.rag.allow_cloud,
+        )
+    except CloudEgressForbidden as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "hits": [
+            {
+                "score": h.score,
+                "text": h.text,
+                "section_path": h.section_path,
+                "document_id": h.document_id,
+            }
+            for h in hits
+        ],
+    }
+
+
+@app.post("/rag/synthesize", summary="Synthesize scenarios from the corpus")
+def rag_synthesize_endpoint(body: RagSynthesizeRequest) -> dict[str, Any]:
+    from pathlib import Path as _P
+    from importlib import resources
+
+    config = load_config()
+    if not config.has_judge:
+        raise HTTPException(
+            status_code=400,
+            detail="No LLM judge configured. Set [providers] judge in decibench.toml.",
+        )
+    store = _rag_store()
+    if store.chunk_count() == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Corpus is empty. Ingest something first.",
+        )
+
+    topic_list = [
+        {
+            "id_slug": _slug(t)[:40] or f"topic-{i}",
+            "intent": t,
+            "tags": "rag,workbench",
+            "criterion": f"Agent handles: {t}",
+        }
+        for i, t in enumerate(body.topics, start=1)
+    ]
+
+    if body.out_dir:
+        out_path = _P(body.out_dir)
+    else:
+        out_path = _P(str(resources.files("decibench.scenarios.suites"))) / body.suite
+
+    result = synthesize_scenarios(
+        topics=topic_list,
+        suite=body.suite,
+        out_dir=out_path,
+        judge_uri=config.providers.judge,
+        judge_model=config.providers.judge_model,
+        judge_api_key=config.providers.judge_api_key,
+        store=store,
+        embedder_uri=config.rag.embedding,
+        grounding_threshold=config.rag.grounding_threshold,
+    )
+    return result.as_dict()
+
+
+@app.post("/rag/synthesize-preview", summary="Generate a single scenario without writing to disk")
+def rag_synthesize_preview(body: RagSynthesizeRequest) -> dict[str, Any]:
+    import tempfile
+    from pathlib import Path as _P
+    
+    config = load_config()
+    if not config.has_judge:
+        raise HTTPException(status_code=400, detail="No LLM judge configured.")
+        
+    store = _rag_store()
+    if store.chunk_count() == 0:
+        raise HTTPException(status_code=400, detail="Corpus is empty.")
+
+    topic_list = [
+        {
+            "id_slug": _slug(t)[:40] or f"topic-{i}",
+            "intent": t,
+            "tags": "rag,workbench,preview",
+            "criterion": f"Agent handles: {t}",
+        }
+        for i, t in enumerate(body.topics[:1], start=1)  # Only take the first topic
+    ]
+
+    with tempfile.TemporaryDirectory() as tmp:
+        out_path = _P(tmp)
+        result = synthesize_scenarios(
+            topics=topic_list,
+            suite=body.suite,
+            out_dir=out_path,
+            judge_uri=config.providers.judge,
+            judge_model=config.providers.judge_model,
+            judge_api_key=config.providers.judge_api_key,
+            store=store,
+            embedder_uri=config.rag.embedding,
+            grounding_threshold=config.rag.grounding_threshold,
+        )
+        
+        preview_yaml = ""
+        if result.written:
+            preview_yaml = result.written[0].read_text()
+            
+        return {
+            "result": result.as_dict(),
+            "yaml": preview_yaml
+        }
+
+
+# ----------------------------------------------------- run-start + progress
+#
+# POST /runs starts a run in the background and returns a task_id. The
+# dashboard subscribes to /runs/stream/{task_id} for live progress events
+# (scenario start / pass / fail / final score). Same Orchestrator the CLI
+# uses; no duplicate logic.
+
+
+_run_tasks: dict[str, dict[str, Any]] = {}
+_run_events: dict[str, asyncio.Queue[dict[str, Any]]] = {}
+
+
+@app.post("/runs", summary="Start a run; returns a task_id for streaming")
+def start_run(body: RunStartRequest) -> dict[str, Any]:
+    from decibench.mcp._helpers import preflight_check
+    
+    config = load_config()
+    preflight = preflight_check(body.target, body.mode, config)
+    if not preflight["ok"]:
+        summary = preflight.get("summary", "Pre-flight check failed.")
+        findings = preflight.get("findings", [])
+        detail = summary
+        if findings:
+            detail += "\n\nFindings:\n- " + "\n- ".join(findings)
+        raise HTTPException(status_code=400, detail=detail)
+
+    task_id = f"run-{uuid.uuid4().hex[:12]}"
+    _run_events[task_id] = asyncio.Queue()
+    _run_tasks[task_id] = {
+        "started_at": datetime.now(UTC).isoformat(),
+        "target": body.target,
+        "mode": body.mode,
+        "suite": body.suite,
+        "status": "queued",
+        "run_id": None,
+        "score": None,
+    }
+    asyncio.create_task(_execute_run(task_id, body))
+    return {
+        "task_id": task_id,
+        "stream_url": f"/runs/stream/{task_id}",
+        "status": "queued",
+    }
+
+
+@app.get("/runs/task/{task_id}", summary="Poll a queued/running task's state")
+def get_run_task(task_id: str) -> dict[str, Any]:
+    if task_id not in _run_tasks:
+        raise HTTPException(status_code=404, detail="task not found")
+    return _run_tasks[task_id]
+
+
+@app.websocket("/runs/stream/{task_id}")
+async def stream_run(websocket: WebSocket, task_id: str) -> None:
+    """WebSocket: live progress events for a running task.
+
+    Events: {type: "started"|"scenario_done"|"complete"|"error", ...}.
+    Closes when ``complete`` or ``error`` is emitted.
+    """
+    if task_id not in _run_events:
+        await websocket.close(code=1008, reason="unknown task_id")
+        return
+    await websocket.accept()
+    queue = _run_events[task_id]
+    try:
+        while True:
+            ev = await queue.get()
+            await websocket.send_text(json.dumps(ev))
+            if ev.get("type") in ("complete", "error"):
+                break
+    except WebSocketDisconnect:
+        return
+
+
+async def _execute_run(task_id: str, body: RunStartRequest) -> None:
+    """Background task: run the orchestrator and emit progress events.
+
+    Single-source-of-truth code path: same Orchestrator the CLI uses, same
+    storage path, same evaluator stack. The WebSocket layer here is pure
+    plumbing.
+    """
+    from decibench.orchestrator import Orchestrator
+
+    config = load_config()
+    # Mode mapping — semantic-rag uses an already-synthesized suite slug.
+    if body.mode == "deterministic":
+        config.providers.judge = "none"
+    elif body.mode in ("semantic", "semantic-local", "semantic-rag"):
+        if not config.has_judge:
+            await _emit(task_id, {
+                "type": "error",
+                "message": f"mode={body.mode} requires a configured judge",
+            })
+            return
+
+    task = _run_tasks[task_id]
+    task["status"] = "running"
+    await _emit(task_id, {"type": "started", "target": body.target, "suite": body.suite, "mode": body.mode})
+
+    completed_scenarios: list[str] = []
+
+    def on_progress(scenario_id: str, passed: bool, score: float, current: int, total: int) -> None:
+        completed_scenarios.append(scenario_id)
+        asyncio.get_event_loop().create_task(_emit(task_id, {
+            "type": "scenario_done",
+            "scenario_id": scenario_id,
+            "passed": passed,
+            "score": score,
+            "current": current,
+            "total": total,
+        }))
+
+    try:
+        orch = Orchestrator(config)
+        result = await orch.run_suite(
+            target=body.target,
+            suite=body.suite,
+            parallel=body.parallel,
+            on_progress=on_progress,
+        )
+        store = RunStore(default_store_path())
+        run_id = store.save_suite_result(result)
+        task["status"] = "complete"
+        task["run_id"] = run_id
+        task["score"] = result.decibench_score
+        await _emit(task_id, {
+            "type": "complete",
+            "run_id": run_id,
+            "score": result.decibench_score,
+            "passed": result.passed,
+            "failed": result.failed,
+        })
+    except Exception as exc:
+        task["status"] = "error"
+        task["error"] = str(exc)
+        await _emit(task_id, {"type": "error", "message": str(exc)})
+
+
+async def _emit(task_id: str, event: dict[str, Any]) -> None:
+    q = _run_events.get(task_id)
+    if q is not None:
+        await q.put(event)
+
+
+def _slug(s: str) -> str:
+    import re
+    return re.sub(r"[^a-z0-9-]+", "-", s.lower()).strip("-")

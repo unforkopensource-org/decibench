@@ -122,6 +122,12 @@ class ConnectorConfig(BaseModel):
     ws_commit_message: str = ""
     ws_recv_timeout: float = 0
     ws_silence_max: int = 0
+    # Send pacing relative to real-time. Earlier versions paced WS chunks at
+    # ~5x real-time and process chunks at 2x — which warped latency/bargein
+    # measurements because the agent saw the caller speak faster than a real
+    # caller could. Default 1.0 = real-time. 0 = burst (no pacing) — only for
+    # smoke tests and the demo connector.
+    send_speed: float = Field(default=1.0, ge=0.0, le=10.0)
 
 
 class EvaluationConfig(BaseModel):
@@ -130,6 +136,42 @@ class EvaluationConfig(BaseModel):
     judge_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     judge_runs: int = Field(default=1, ge=1, le=5)  # 3 = median-of-3 for stability
     timeout_seconds: int = Field(default=120, ge=10, le=600)
+
+
+# (green_ms, yellow_ms, red_ms) latency bands. The boundary semantics are:
+#   value ≤ green_ms   → score 100  (excellent)
+#   value = yellow_ms  → score 50   (acceptable; same value as the pass/fail threshold)
+#   value ≥ red_ms     → score 0    (fail)
+# Pass/fail threshold lives at ``yellow_ms`` so the curve and the threshold
+# can never disagree — the historical bug was a curve saying 800 ms = 50
+# while the threshold said 800 ms passes.
+class LatencyScoringConfig(BaseModel):
+    """Latency band configuration consumed by both the evaluator and the scorer.
+
+    Single source of truth for the latency contract. The evaluator reads
+    ``yellow_ms`` as its pass threshold; the scorer maps the (green, yellow,
+    red) triple onto a piecewise-linear 100/50/0 curve. Anyone tuning
+    latency expectations changes them in exactly one place.
+    """
+
+    p50:  tuple[int, int, int] = (300,  800, 2000)
+    p95:  tuple[int, int, int] = (500, 1200, 3000)
+    p99:  tuple[int, int, int] = (800, 2000, 5000)
+    ttfw: tuple[int, int, int] = (300,  800, 2000)
+
+    @staticmethod
+    def score_band(value: float, band: tuple[int, int, int]) -> float:
+        """Piecewise-linear 100/50/0 curve over a (green, yellow, red) triple."""
+        green, yellow, red = band
+        if value <= green:
+            return 100.0
+        if value >= red:
+            return 0.0
+        if value <= yellow:
+            # green→yellow maps to 100→50
+            return 100.0 - 50.0 * (value - green) / max(1, yellow - green)
+        # yellow→red maps to 50→0
+        return 50.0 - 50.0 * (value - yellow) / max(1, red - yellow)
 
 
 class ScoringWeights(BaseModel):
@@ -163,6 +205,7 @@ class ScoringConfig(BaseModel):
     """[scoring] section."""
     weights: ScoringWeights = Field(default_factory=ScoringWeights)
     policies: dict[str, MetricPolicy] = Field(default_factory=dict)
+    latency_bands: LatencyScoringConfig = Field(default_factory=LatencyScoringConfig)
 
     @property
     def resolved_policies(self) -> dict[str, MetricPolicy]:
@@ -189,6 +232,24 @@ class CIConfig(BaseModel):
     fail_on_compliance_violation: bool = True
 
 
+class RagConfig(BaseModel):
+    """[rag] section — knowledge-store + synthesis settings.
+
+    Defaults are local-first: the embedding provider is the on-CPU
+    sentence-transformers model and cloud egress is disabled. Users who
+    want a cloud embedder must set both ``embedding`` to a cloud URI AND
+    ``allow_cloud = true`` — the inconvenience is intentional.
+    """
+
+    embedding: str = "embed://local/all-MiniLM-L6-v2"
+    allow_cloud: bool = False
+    chunk_size_tokens: int = Field(default=800, ge=64, le=4000)
+    chunk_overlap_tokens: int = Field(default=100, ge=0, le=1000)
+    # Grounding gate threshold for synthesized scenarios. Lowering this lets
+    # the synthesizer invent more — at the cost of caller-turn fidelity.
+    grounding_threshold: float = Field(default=0.9, ge=0.0, le=1.0)
+
+
 class ProfileConfig(BaseModel):
     """A named configuration profile (e.g., dev, ci, benchmark)."""
     suite: str = "quick"
@@ -209,6 +270,7 @@ class DecibenchConfig(BaseModel):
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     scoring: ScoringConfig = Field(default_factory=ScoringConfig)
     ci: CIConfig = Field(default_factory=CIConfig)
+    rag: RagConfig = Field(default_factory=RagConfig)
     profiles: dict[str, ProfileConfig] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -227,6 +289,22 @@ class DecibenchConfig(BaseModel):
     def defaults(cls) -> DecibenchConfig:
         """Return default configuration (no file needed)."""
         return cls()
+
+    def redacted_dump(self) -> dict[str, Any]:
+        """Return a JSON-safe config view with secrets replaced by sentinels.
+
+        Used as the canonical input to ``SuiteResult.compute_config_hash`` and
+        to the reproducibility seal. Two engineers running identical scoring
+        configs but with different provider API keys MUST produce the same
+        hash — anything else breaks the "same config, same score" promise.
+
+        Replacement strategy: every field whose name ends in ``_api_key`` or
+        ``_secret`` is replaced with ``"<set>"`` (if it had a value) or
+        ``"<unset>"`` (if empty). Field structure is preserved so the hash
+        still varies on every non-secret change.
+        """
+        data = self.model_dump(mode="json")
+        return _redact_secrets(data)
 
     def with_profile(self, profile_name: str) -> DecibenchConfig:
         """Return a new config with profile overrides applied."""
@@ -275,6 +353,24 @@ def load_config(
         config = config.with_profile(profile)
 
     return config
+
+
+_SECRET_FIELD_PATTERNS = ("api_key", "secret", "token", "password", "credentials", "key")
+
+
+def _redact_secrets(value: Any) -> Any:
+    """Recursively replace secret-looking fields with set/unset sentinels."""
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        for k, v in value.items():
+            if isinstance(k, str) and any(s in k.lower() for s in _SECRET_FIELD_PATTERNS):
+                out[k] = "<set>" if v else "<unset>"
+            else:
+                out[k] = _redact_secrets(v)
+        return out
+    if isinstance(value, list):
+        return [_redact_secrets(item) for item in value]
+    return value
 
 
 def _resolve_config_secrets(config: DecibenchConfig) -> DecibenchConfig:

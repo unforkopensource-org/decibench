@@ -1,0 +1,3 @@
+version = "1.0.0"
+description = "Standard suite — multi-turn, billing, accents, interruption."
+deterministic_friendly = true

@@ -1,0 +1,3 @@
+version = "1.0.0-rag"
+description = "RAG-synthesized scenarios from agent.md"
+source_corpus = "agent.md"

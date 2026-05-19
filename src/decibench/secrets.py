@@ -112,8 +112,17 @@ def delete_secret(provider: str, profile: str = "default") -> None:
 
 
 def describe_secret(provider: str, profile: str = "default") -> SecretState:
-    """Describe where a provider secret would currently come from."""
-    normalized = _normalize_secret_provider(provider)
+    """Describe where a provider secret would currently come from.
+
+    Returns a SecretState with ``source="none-required"`` for providers that
+    don't use API keys (e.g. Ollama, the literal ``"none"`` placeholder).
+    Callers can render this as a clean "not applicable" rather than a scary
+    "missing" — and they get an empty ``env_var`` field as a signal.
+    """
+    try:
+        normalized = _normalize_secret_provider(provider)
+    except KeylessProviderError as exc:
+        return SecretState(provider=exc.provider, source="none-required", env_var="")
     env_var = env_var_name(normalized)
     if os.environ.get(env_var):
         return SecretState(provider=normalized, source="env", env_var=env_var)
@@ -147,6 +156,11 @@ def _normalize_secret_provider(provider: str) -> str:
         return "gemini"
     if normalized in ("openai", "vapi", "retell", "elevenlabs"):
         return normalized
+    # Providers that legitimately have no API key — accessed locally only.
+    # These short-circuit before catalog lookup so describe_secret() can
+    # report a clean "no key needed" state instead of crashing.
+    if normalized in ("ollama", "none", ""):
+        raise KeylessProviderError(normalized or "none")
     # Reuse catalog normalization for supported LLM providers.
     try:
         return get_provider_catalog(normalized).provider
@@ -154,3 +168,11 @@ def _normalize_secret_provider(provider: str) -> str:
         available = ", ".join(sorted(_ENV_VARS))
         msg = f"Unsupported secret provider '{provider}'. Available: {available}"
         raise ValueError(msg) from exc
+
+
+class KeylessProviderError(Exception):
+    """Raised when a caller asks about secrets for a provider that has none."""
+
+    def __init__(self, provider: str) -> None:
+        super().__init__(f"Provider {provider!r} does not use API keys")
+        self.provider = provider

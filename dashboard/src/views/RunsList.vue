@@ -2,6 +2,7 @@
 import { useRuns } from '../api'
 import ErrorBox from '../components/ErrorBox.vue'
 import Spinner from '../components/Spinner.vue'
+import ModeBadge from '../components/ModeBadge.vue'
 import { formatScore, relativeTime } from '../format'
 
 const { data, isLoading, error } = useRuns()
@@ -94,14 +95,7 @@ function gradeLabel(score: number): string {
               <span class="pill-pass">{{ run.passed }} passed</span>
               <span v-if="run.failed > 0" class="pill-fail">{{ run.failed }} failed</span>
               <span class="text-ink-400">{{ run.total_scenarios }} scenarios</span>
-              <span
-                class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                :class="run.evaluation_mode === 'semantic'
-                  ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-200/60'
-                  : 'bg-amber-50 text-amber-600 ring-1 ring-amber-200/60'"
-              >
-                {{ run.evaluation_mode === 'semantic' ? 'Semantic' : 'Deterministic' }}
-              </span>
+              <ModeBadge :mode="run.evaluation_mode || 'deterministic'" :suite="run.suite" />
               <span v-if="run.evaluation_mode === 'semantic' && run.judge_model" class="text-[10px] text-violet-500 font-medium">
                 {{ run.judge_model }}
               </span>

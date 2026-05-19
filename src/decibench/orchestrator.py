@@ -16,16 +16,8 @@ from typing import TYPE_CHECKING, Any
 from decibench.audio.recorder import AudioRecorder
 from decibench.audio.synthesizer import AudioSynthesizer
 from decibench.connectors.registry import get_connector
-from decibench.evaluators.compliance import ComplianceEvaluator
-from decibench.evaluators.hallucination import HallucinationEvaluator
-from decibench.evaluators.interruption import InterruptionEvaluator
-from decibench.evaluators.latency import LatencyEvaluator
-from decibench.evaluators.mos import MOSEvaluator
+from decibench.evaluators import standard_stack
 from decibench.evaluators.score import DecibenchScorer
-from decibench.evaluators.silence import SilenceEvaluator
-from decibench.evaluators.stoi import STOIEvaluator
-from decibench.evaluators.task import TaskCompletionEvaluator
-from decibench.evaluators.wer import WEREvaluator
 from decibench.models import (
     AgentEvent,
     AudioBuffer,
@@ -68,18 +60,15 @@ class Orchestrator:
         self._progress_callback: Any | None = None
         self._completed_count: int = 0
 
-        # Evaluators — ordered: deterministic first, then statistical, then semantic
-        self._evaluators: list[BaseEvaluator] = [
-            WEREvaluator(),
-            LatencyEvaluator(),
-            MOSEvaluator(),
-            STOIEvaluator(),
-            SilenceEvaluator(),
-            ComplianceEvaluator(),
-            TaskCompletionEvaluator(),
-            HallucinationEvaluator(),
-            InterruptionEvaluator(),
-        ]
+        # Canonical evaluator stack — same factory the imported-call path uses.
+        # Live runs always have audio + events; judge availability is folded in
+        # per-run via `has_judge` so the stack auto-skips semantic evaluators
+        # when no judge is configured.
+        self._evaluators: list[BaseEvaluator] = standard_stack(
+            has_audio=True,
+            has_events=True,
+            has_judge=config.has_judge,
+        )
 
     async def run_suite(
         self,
@@ -218,6 +207,18 @@ class Orchestrator:
                 from decibench.llm_catalog import judge_provider_from_uri
                 judge_prov = judge_provider_from_uri(self._config.providers.judge) or ""
 
+            # Reproducibility rollup. flake_rate is the fraction of scenarios
+            # whose pass/fail outcome was unstable across runs; only
+            # meaningful when ``runs_per_scenario > 1`` and exposed for
+            # operator triage ("which scenarios should I rerun?").
+            flake_count = sum(1 for r in eval_results if r.flaked)
+            flake_rate = flake_count / len(eval_results) if eval_results else 0.0
+            score_stddev_avg = (
+                sum(r.score_stddev for r in eval_results) / len(eval_results)
+                if eval_results
+                else 0.0
+            )
+
             return SuiteResult(
                 suite=suite,
                 target=target,
@@ -233,9 +234,14 @@ class Orchestrator:
                 judge_model=judge_model,
                 evaluation_mode=eval_mode,
                 judge_provider=judge_prov,
-                config_hash=SuiteResult.compute_config_hash(
-                    self._config.model_dump(mode="json")
-                ),
+                # Hash the redacted view — API keys MUST NOT enter the hash
+                # input, otherwise two engineers with identical scoring config
+                # but different env keys produce different hashes and the
+                # "same config, same score" promise breaks.
+                config_hash=SuiteResult.compute_config_hash(self._config.redacted_dump()),
+                suite_version=self._scenario_loader.suite_version(suite),
+                flake_rate=round(flake_rate, 3),
+                score_stddev_avg=round(score_stddev_avg, 2),
                 timestamp=datetime.now(UTC).isoformat(),
             )
         finally:
@@ -305,6 +311,8 @@ class Orchestrator:
         start = time.monotonic()
 
         # 1. Get connector
+        from decibench.connectors.session import ConnectorSession
+
         connector = get_connector(target)
         is_demo = target in ("demo", "demo://")
 
@@ -321,7 +329,13 @@ class Orchestrator:
             "bit_depth": self._config.audio.bit_depth,
             **connector_overrides,
         }
-        handle = await connector.connect(target, connector_config)
+        # Session wraps connect+disconnect with idempotency. Even if the body
+        # disconnects explicitly to collect a summary, the surrounding
+        # cleanup can call disconnect() again without re-triggering the
+        # connector's teardown (which on bridge connectors resets buffers
+        # and would zero out the CallSummary on the second call).
+        session = ConnectorSession(connector, target, connector_config)
+        handle = await session.connect()
 
         try:
             all_metrics: dict[str, MetricResult] = {}
@@ -400,7 +414,9 @@ class Orchestrator:
                     ))
 
                 # 4. Disconnect and get summary
-                summary = await connector.disconnect(handle)
+                summary = await session.disconnect() or CallSummary(
+                    duration_ms=0, turn_count=0
+                )
 
                 # Merge caller-timing events recorded during send_audio
                 extra_events = handle.state.get("_extra_events", [])
@@ -465,13 +481,23 @@ class Orchestrator:
                         logger.debug("Could not save audio for %s: %s", scenario.id, e)
 
                 # 6. Run evaluators
+                # Single source of truth for the latency contract:
+                # ``ScoringConfig.latency_bands.yellow_ms`` is BOTH the pass
+                # threshold for the evaluator AND the 50/100 inflection point
+                # of the scorer's curve. The legacy keys are still populated
+                # for backward compatibility with evaluators that consume
+                # them directly in tests.
+                bands = self._config.scoring.latency_bands
                 eval_context: dict[str, Any] = {
                     "judge": judge,
                     "config": self._config,
-                    "p50_max_ms": (self._config.ci.max_p95_latency_ms or 1500) * 0.53,  # ~800ms
-                    "p95_max_ms": self._config.ci.max_p95_latency_ms or 1500,
-                    "p99_max_ms": (self._config.ci.max_p95_latency_ms or 1500) * 2.0,  # ~3000ms
-                    "ttfw_max_ms": (self._config.ci.max_p95_latency_ms or 1500) * 0.53,  # ~800ms
+                    "latency_bands": bands,
+                    # Backward-compat keys — kept so test fixtures that
+                    # construct context dicts directly keep working.
+                    "p50_max_ms": bands.p50[1],
+                    "p95_max_ms": bands.p95[1],
+                    "p99_max_ms": bands.p99[1],
+                    "ttfw_max_ms": bands.ttfw[1],
                     # Fix #4: Pass reference audio for real STOI computation
                     "reference_audio": last_caller_audio.data if last_caller_audio else None,
                 }
@@ -594,8 +620,11 @@ class Orchestrator:
                 spans=spans,
             )
         finally:
-            # Ensure connector always disconnects
-            await connector.disconnect(handle)
+            # Idempotent — if the body already disconnected to collect the
+            # summary, this is a no-op. If it didn't (exception path), this
+            # is the cleanup. Either way, the connector's teardown runs
+            # exactly once per scenario.
+            await session.disconnect()
 
     @staticmethod
     def _collapse_agent_transcript_events(events: list[AgentEvent]) -> list[str]:
@@ -663,9 +692,22 @@ class Orchestrator:
 
     @staticmethod
     def _average_runs(runs: list[EvalResult]) -> EvalResult:
-        """Average metrics across multiple runs of the same scenario."""
+        """Average metrics across multiple runs of the same scenario.
+
+        Records reproducibility telemetry alongside the averaged numbers:
+
+        - ``score_stddev``: population std-dev of per-run scores. Tells you
+          how reproducible the agent's behavior is independent of pass/fail.
+        - ``flaked``: True if pass/fail outcomes differed across runs. A
+          flaked scenario is the strongest signal of an unstable agent —
+          the averaged score may be 65/100 but if half the runs passed and
+          half failed, that 65 is a lie.
+        - ``run_count``: number of runs that actually completed (failed
+          runs still count; they're a real outcome).
+        """
         if len(runs) == 1:
-            return runs[0]
+            base = runs[0]
+            return base.model_copy(update={"score_stddev": 0.0, "flaked": False, "run_count": 1})
 
         # Use the first run as template
         base = runs[0]
@@ -727,6 +769,17 @@ class Orchestrator:
         for key in cost_keys:
             averaged_cost[key] = sum(run.cost.get(key, 0.0) for run in runs) / len(runs)
 
+        # Reproducibility telemetry — surfaces flakiness instead of hiding it
+        # in the average. A run set where 5 of 10 pass and the average score
+        # is 65 is a much weaker signal than 10/10 passes at 65, and we want
+        # the dashboard to show both.
+        import statistics as _stats
+
+        scores = [r.score for r in runs]
+        score_stddev = round(_stats.pstdev(scores), 2) if len(scores) > 1 else 0.0
+        pass_outcomes = {r.passed for r in runs}
+        flaked = len(pass_outcomes) > 1
+
         return EvalResult(
             scenario_id=base.scenario_id,
             passed=len(failures) == 0,
@@ -739,28 +792,24 @@ class Orchestrator:
             latency=base.latency,
             duration_ms=sum(r.duration_ms for r in runs) / len(runs),
             transcript=base.transcript,
+            score_stddev=score_stddev,
+            flaked=flaked,
+            run_count=len(runs),
         )
 
     @staticmethod
     def _aggregate_latency(results: list[EvalResult]) -> dict[str, float]:
-        """Aggregate latency metrics across all scenarios."""
-        p50_values = []
-        p95_values = []
-        p99_values = []
+        """Aggregate latency over the merged per-turn sample population.
 
-        for r in results:
-            if "turn_latency_p50_ms" in r.metrics:
-                p50_values.append(r.metrics["turn_latency_p50_ms"].value)
-            if "turn_latency_p95_ms" in r.metrics:
-                p95_values.append(r.metrics["turn_latency_p95_ms"].value)
-            if "turn_latency_p99_ms" in r.metrics:
-                p99_values.append(r.metrics["turn_latency_p99_ms"].value)
+        Delegates to ``decibench.evaluators.aggregate.aggregate_latency``,
+        which computes a real nearest-rank percentile over every per-turn
+        latency sample emitted by every scenario in the suite. Replaces the
+        prior mean-of-per-scenario-percentile approximation, which could
+        report a "p95" that no actual call had ever experienced.
+        """
+        from decibench.evaluators.aggregate import aggregate_latency
 
-        return {
-            "p50_ms": round(sum(p50_values) / len(p50_values), 1) if p50_values else 0,
-            "p95_ms": round(sum(p95_values) / len(p95_values), 1) if p95_values else 0,
-            "p99_ms": round(sum(p99_values) / len(p99_values), 1) if p99_values else 0,
-        }
+        return aggregate_latency(results)
 
     @staticmethod
     def _aggregate_cost(results: list[EvalResult]) -> CostBreakdown:

@@ -9,8 +9,8 @@
 # When you change a connector/importer/UI status here, update README + /docs to
 # match. CI's docs-validation step uses this file as the canonical answer.
 
-version: 2
-updated: "2026-04-16"
+version: 3
+updated: "2026-05-14"
 
 connectors:
   demo:
@@ -43,11 +43,24 @@ connectors:
     notes: >-
       Same as Retell — Vapi web calls run on Daily.co WebRTC and need the
       sidecar bridge. Use ws:// for raw Vapi WebSocket endpoints today.
+  elevenlabs:
+    target_uri: elevenlabs://agent_id
+    status: shipped
+    notes: >-
+      Native ElevenLabs Conversational AI connector. Talks directly to the
+      ElevenLabs WebSocket API — no bridge sidecar, no headless browser.
+      Requires ELEVENLABS_API_KEY in keyring or env.
+  twilio:
+    target_uri: twilio://host/path
+    status: shipped
+    notes: >-
+      Twilio Media Streams mock. Connects to your voice agent's WebSocket
+      server and pretends to be Twilio — sends the same connected/start/media
+      messages a real call would, base64-encoded mulaw 8kHz. Use for local
+      Twilio-flow testing without spending real call credits.
   livekit:
     status: planned
     notes: "Planned. Will build on the same sidecar bridge."
-  elevenlabs:
-    status: planned
   bland:
     status: planned
   sip:
@@ -149,7 +162,10 @@ cli:
     status: planned
     notes: "Adversarial suite docs/copy exist; first-class red-team CLI is planned."
   mcp_serve:
-    status: planned
+    status: shipped
+    notes: >-
+      Ships as the standalone ``decibench-mcp`` entry point. Requires the
+      optional ``decibench[mcp]`` extra. Supports stdio and SSE transports.
 
 api:
   read_only_runs:

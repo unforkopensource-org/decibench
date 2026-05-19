@@ -105,11 +105,27 @@ def _config_checks(config: object, config_path: Path) -> list[tuple[str, str, st
     else:
         secret_state = describe_secret(judge_provider)
         catalog = get_provider_catalog(judge_provider)
-        status = "PASS" if typed_config.providers.judge_api_key else "FAIL"
-        detail = (
-            f"{catalog.display_name} / {typed_config.providers.judge_model or 'no model set'} "
-            f"(key source: {secret_state.source}; fix: decibench auth set {judge_provider})"
-        )
+        if secret_state.source == "none-required":
+            # Ollama and other local providers don't use an API key — PASS.
+            status = "PASS"
+            detail = (
+                f"{catalog.display_name} / "
+                f"{typed_config.providers.judge_model or 'no model set'} (local, no key needed)"
+            )
+        elif typed_config.providers.judge_api_key:
+            status = "PASS"
+            detail = (
+                f"{catalog.display_name} / "
+                f"{typed_config.providers.judge_model or 'no model set'} "
+                f"(key source: {secret_state.source})"
+            )
+        else:
+            status = "FAIL"
+            detail = (
+                f"{catalog.display_name} / "
+                f"{typed_config.providers.judge_model or 'no model set'} "
+                f"(key missing; fix: decibench auth set {judge_provider})"
+            )
         checks.append((status, "Semantic judge", detail))
 
     # Target connectivity probe
@@ -125,7 +141,10 @@ def _config_checks(config: object, config_path: Path) -> list[tuple[str, str, st
         checks.append((bridge_status, "Native bridge", bridge_detail))
 
     if typed_config.target.default.startswith("elevenlabs://"):
-        from decibench.secrets import describe_secret
+        # Note: do NOT re-import describe_secret here — the file-level import
+        # already provides it, and a function-local `from ... import` shadows
+        # it across the whole function (Python scoping), breaking earlier
+        # uses. See git history if you're tempted to "clean up" this comment.
         el_state = describe_secret("elevenlabs")
         el_status = "PASS" if el_state.source != "missing" else "WARN"
         el_detail = f"API key via {el_state.source}" if el_state.source != "missing" else (

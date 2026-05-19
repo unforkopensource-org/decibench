@@ -1,0 +1,53 @@
+id: realestate-ask-pricing-001
+version: 1
+mode: scripted
+description: Caller asks for pricing before agreeing to a meeting
+tags:
+- pricing
+- information
+metadata: {}
+persona:
+  name: Default
+  accent: en-US
+  voice: ''
+  speaking_speed: 1.0
+  patience_level: medium
+  background_noise: clean
+  noise_level_db: 15.0
+  behavior: {}
+conversation:
+- role: caller
+  text: What is the cost of your AI voice agent?
+  expect: null
+  audio_overrides: {}
+- role: agent
+  text: null
+  expect:
+    intent: provide_pricing_info
+    must_ask: []
+    must_not_say: []
+    must_include:
+    - cost
+    - pricing
+    must_extract: {}
+    max_latency_ms: 1500
+    tone: null
+  audio_overrides: {}
+goal: book a meeting with an Automation specialist
+success_criteria:
+- type: task_completion
+  description: Agent provides pricing info or escalates honestly
+  check: llm_judge
+  rule: null
+  threshold: null
+  p95_max_ms: null
+tool_mocks: []
+variants:
+  noise_levels:
+  - clean
+  accents:
+  - en-US
+  speeds:
+  - 1.0
+timeout_seconds: 60
+max_turns: 6

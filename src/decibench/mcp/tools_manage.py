@@ -62,6 +62,18 @@ def doctor() -> str:
     node = shutil.which("node")
     checks.append(("PASS" if node else "WARN", "Node.js", node or "Not found (needed for Retell/Vapi bridge)"))
 
+    # RAG Status
+    from decibench.rag import RagStore
+    try:
+        rag_stats = RagStore().stats()
+        rag_docs = rag_stats["documents"]
+        if rag_docs > 0:
+            checks.append(("PASS", "RAG Corpus", f"{rag_docs} documents ({rag_stats['chunks']} chunks)"))
+        else:
+            checks.append(("PASS", "RAG Corpus", "Empty (run `decibench rag ingest` to populate)"))
+    except Exception as e:
+        checks.append(("WARN", "RAG Corpus", f"Error: {e}"))
+
     # Optional packages
     for pkg, label in [("faster_whisper", "Whisper STT"), ("edge_tts", "Edge TTS"), ("uvicorn", "Workbench")]:
         installed = importlib.util.find_spec(pkg) is not None
@@ -130,20 +142,70 @@ def list_suites() -> str:
     Returns:
         Available suites with descriptions.
     """
-    suites = {
-        "quick": ("10 scenarios", "Fast health check. Covers core metrics: latency, compliance, basic task completion."),
-        "full": ("21 scenarios", "Comprehensive test. All metrics including robustness, interruption handling, edge cases."),
-    }
+    from importlib import resources
+    from decibench.scenarios.loader import ScenarioLoader
 
     lines = ["## Available Test Suites", ""]
-    for name, (count, desc) in suites.items():
-        lines.append(f"### `{name}` ({count})")
-        lines.append(f"{desc}")
-        lines.append("")
+    
+    loader = ScenarioLoader()
+    
+    # Static descriptions for built-ins
+    desc_map = {
+        "quick": "Fast health check. Covers core metrics: latency, compliance, basic task completion.",
+        "full": "Comprehensive test. All metrics including robustness, interruption handling, edge cases.",
+        "standard": "Standard extended suite.",
+        "acoustic": "Acoustic edge cases.",
+        "adversarial": "Adversarial testing.",
+    }
+
+    try:
+        suite_pkg = resources.files("decibench.scenarios.suites")
+        suites = []
+        for item in suite_pkg.iterdir():
+            if item.is_dir() and not item.name.startswith("_"):
+                suites.append(item.name)
+        
+        # Ensure full is always listed
+        if "full" not in suites:
+            suites.append("full")
+            
+        for suite in sorted(suites):
+            scenarios = loader.load_suite(suite)
+            count = len(scenarios)
+            if count == 0:
+                continue
+                
+            desc = desc_map.get(suite, "Custom / RAG-synthesized suite.")
+            lines.append(f"### `{suite}` ({count} scenarios)")
+            lines.append(f"{desc}")
+            lines.append("")
+            
+    except Exception as e:
+        lines.append(f"Error loading suites: {e}")
 
     lines.append("Use with: `run_test(target='...', suite='quick')` or `run_test(target='...', suite='full')`")
 
     return "\n".join(lines)
+
+
+@mcp.tool()
+def open_workbench(run_id: str = "") -> str:
+    """Get the URL to open the visual Workbench dashboard.
+    
+    Args:
+        run_id: Optional ID of a specific run to open.
+        
+    Returns:
+        The URL to the local workbench.
+    """
+    url = "http://127.0.0.1:8000/#/"
+    if run_id:
+        url = f"http://127.0.0.1:8000/#/runs/{run_id}"
+        
+    return (
+        f"The Decibench visual workbench is available at: {url}\n\n"
+        "Ensure the server is running with `decibench serve`."
+    )
 
 
 @mcp.tool()

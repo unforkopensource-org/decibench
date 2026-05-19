@@ -15,7 +15,7 @@ from decibench.models import CallTrace, EvalResult, SuiteResult
 from decibench.store.migrations import run_migrations
 from decibench.store.privacy import RedactionPolicy
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def default_store_path(base_dir: Path | None = None) -> Path:
@@ -119,7 +119,7 @@ class RunStore:
             )
             # Meta table initialization
             conn.execute(
-                "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)",
                 ("schema_version", "1"),  # Migrations will update this to the latest schema.
             )
 

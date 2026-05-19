@@ -19,13 +19,18 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(
     "Decibench",
-    instructions=(
-        "Decibench is a voice agent testing framework. Use these tools to "
-        "run quality tests against voice agents (ElevenLabs, Retell, Vapi, "
-        "Twilio, WebSocket, HTTP, or local processes), view results, analyze "
-        "failures, and track quality over time. All data is stored locally "
-        "in .decibench/decibench.sqlite."
-    ),
+    instructions="""Decibench is a voice agent testing and observability platform.
+
+You have access to Decibench's complete evaluation engine. Decibench operates in Three Modes:
+1. Deterministic: Fast, script-based matching for quick regression tests.
+2. Semantic: LLM-judged criteria evaluation for conversational robustness.
+3. Semantic+RAG: Automatically synthesized scenarios based on a knowledge corpus.
+
+Use these tools to help users:
+- RAG workflows: Ingest documents (`rag_ingest`), synthesize test suites (`rag_synthesize`), and test agents against them (`synthesize_and_run`).
+- Testing: Execute tests (`run_quick_test`, `run_test`) and retrieve detailed traces.
+- Analysis: View results, evaluate metrics, and diagnose issues (`doctor`).
+""",
 )
 
 # Import tool modules to trigger registration with the mcp instance above.
@@ -34,3 +39,5 @@ import decibench.mcp.tools_run  # noqa: E402, F401
 import decibench.mcp.tools_results  # noqa: E402, F401
 import decibench.mcp.tools_analyze  # noqa: E402, F401
 import decibench.mcp.tools_manage  # noqa: E402, F401
+import decibench.mcp.tools_rag  # noqa: E402, F401
+import decibench.mcp.tools_inbox  # noqa: E402, F401

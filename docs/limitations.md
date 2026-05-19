@@ -12,8 +12,12 @@ the right expectations on day one.
   not on a per-PR CI run. For real Retell/Vapi work today use:
   - the **importers** (`decibench import` with `--source vapi|retell`)
   - the generic `ws://` connector for raw WebSocket endpoints
-- LiveKit, ElevenLabs, Bland, SIP, and PSTN connectors are **planned**
-  — not implemented.
+- LiveKit, Bland, SIP, and PSTN connectors are **planned** — not implemented.
+- The **ElevenLabs Conversational AI** connector ships in v1.0 against the
+  ElevenLabs WebSocket API directly (no sidecar). Requires an ElevenLabs
+  API key.
+- The **Twilio Media Streams mock** ships in v1.0 for local Twilio-flow
+  testing. It does not place real phone calls.
 - We do **not** host telephony. SIP/PSTN paths will always be BYO
   Twilio/Vonage.
 
@@ -46,8 +50,9 @@ the right expectations on day one.
 
 - `decibench compare` is **beta** — it works, but the output format may
   change.
-- `decibench red-team` and `decibench mcp serve` are **planned** — the
-  README does not claim them as shipped.
+- `decibench red-team` is **planned**.
+- `decibench-mcp` (MCP server) **ships in v1.0** behind the optional
+  `decibench[mcp]` extra.
 
 ## Distribution
 

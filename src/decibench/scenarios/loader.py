@@ -172,6 +172,36 @@ class ScenarioLoader:
             logger.debug("Could not load bundled suite '%s': %s", suite_name, e)
         return scenarios
 
+    def suite_version(self, suite_name: str) -> str:
+        """Read the version stamp for a built-in suite.
+
+        Built-in suites carry a ``suite.toml`` file with at minimum a
+        ``version`` key. The stamp is propagated into ``SuiteResult.suite_version``
+        so that ``decibench compare`` can warn when comparing runs across
+        suite edits (e.g. when scenarios are added to ``quick``).
+
+        Composite ``full`` rolls up the suite versions of its sub-suites.
+        Unknown / custom suites return an empty string.
+        """
+        if suite_name == "full":
+            parts = [
+                f"{sub}={self.suite_version(sub)}"
+                for sub in ("quick", "standard", "acoustic", "adversarial")
+                if self.suite_version(sub)
+            ]
+            return "+".join(parts)
+        try:
+            import tomllib
+
+            stamp = resources.files(_BUILTIN_SUITES_PKG).joinpath(suite_name, "suite.toml")
+            if stamp.is_file():
+                data = tomllib.loads(stamp.read_text(encoding="utf-8"))
+                version = data.get("version", "")
+                return str(version) if isinstance(version, str) else ""
+        except (TypeError, FileNotFoundError, AttributeError):
+            return ""
+        return ""
+
     @staticmethod
     def _generate_default_suite(suite_name: str) -> list[Scenario]:
         """Generate default scenarios when no suite files exist."""

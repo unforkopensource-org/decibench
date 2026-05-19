@@ -141,6 +141,16 @@ class WebSocketConnector(BaseConnector):
         self._commit_message: dict[str, Any] | None = None
         self._recv_timeout: float = _DEFAULT_RECV_TIMEOUT_SECONDS
         self._silence_max: int = _DEFAULT_SILENCE_MAX
+        # Pacing speed relative to real-time (1.0 = real-time, 0 = burst).
+        # Populated from config at connect() time; default matches the
+        # ConnectorConfig default so unit tests that bypass config still
+        # behave deterministically.
+        self._send_speed: float = 1.0
+        # Captured at connect() so we can reconnect during auto-detect
+        # without needing to read it back from the websockets object (whose
+        # attribute layout drifts across versions).
+        self._url: str = ""
+        self._headers: dict[str, str] = {}
         # Buffered initial message captured during auto-detect
         self._initial_message: bytes | str | None = None
         self._detected_protocol: str | None = None
@@ -179,6 +189,11 @@ class WebSocketConnector(BaseConnector):
         self._send_format = str(effective.get("ws_send_format", "binary"))
         self._recv_timeout = float(effective.get("ws_recv_timeout", _DEFAULT_RECV_TIMEOUT_SECONDS))
         self._silence_max = int(effective.get("ws_silence_max", _DEFAULT_SILENCE_MAX))
+        # ``send_speed`` reaches us through the orchestrator's connector_config
+        # dict (built from ConnectorConfig). Fallback to 1.0 (real-time) so
+        # connectors instantiated outside orchestration (tests, direct API
+        # callers) still get correct pacing by default.
+        self._send_speed = float(config.get("send_speed", 1.0))
 
         # Parse optional commit / setup messages
         raw_commit = effective.get("ws_commit_message")
@@ -193,6 +208,12 @@ class WebSocketConnector(BaseConnector):
 
         logger.info("Connecting to WebSocket: %s (protocol=%s, send_format=%s, sample_rate=%d)",
                      url, protocol, self._send_format, self.required_sample_rate)
+
+        # Stash url + headers so auto-detect's reconnect path doesn't need
+        # to introspect `self._ws` (whose attribute layout has changed
+        # between websockets library versions).
+        self._url = url
+        self._headers = dict(headers) if headers else {}
 
         try:
             self._ws = await websockets.connect(
@@ -284,9 +305,12 @@ class WebSocketConnector(BaseConnector):
     async def _probe_binary_or_text(self) -> None:
         """Send a tiny binary probe to see if the server accepts it.
 
-        If the server drops the connection on binary, reconnect and switch to
-        text mode. Many voice agent wrappers accept plain text input and
-        respond with JSON transcript + audio.
+        If the server drops the connection on binary, attempt one reconnect
+        and switch to text mode. If the reconnect also fails, raise a
+        ``ConnectionError`` at connect() time — the previous behaviour was
+        to silently keep the dead ``_ws`` and pretend to be in text mode,
+        which deferred the failure to the first ``send_audio`` call and
+        produced confusing ``RuntimeError`` traces with no diagnostic hint.
         """
         import websockets
 
@@ -307,33 +331,41 @@ class WebSocketConnector(BaseConnector):
                 logger.info("Auto-detect: binary accepted (no response yet), using raw-pcm")
                 return
         except Exception:
-            # Binary probe caused disconnect — this is a text-input agent
+            # Binary probe caused disconnect — this is a text-input agent.
+            # Attempt a single reconnect; if that fails we surface a real
+            # ConnectionError instead of pretending text mode works on a
+            # dead socket.
             logger.info("Auto-detect: server rejected binary, switching to text mode")
 
-        # Reconnect for text mode
-        try:
-            # Reconstruct URL from the original connection
-            orig_url = str(self._ws.request.url) if hasattr(self._ws, 'request') else None
-            if orig_url is None:
-                # Fallback: can't reconnect, just set text mode on broken connection
-                self._detected_protocol = "text"
-                self._apply_preset("text")
-                return
+        orig_url = self._url
+        if not orig_url:
+            raise ConnectionError(
+                "WebSocket auto-detect failed: binary probe was rejected and "
+                "the original URL was never recorded. Set ws_protocol='text' "
+                "explicitly in [connector] if the agent only accepts text input."
+            )
 
+        try:
             self._ws = await websockets.connect(
                 orig_url,
+                additional_headers=self._headers,
                 max_size=10 * 1024 * 1024,
                 ping_interval=30,
                 ping_timeout=30,
                 close_timeout=10,
             )
-            self._detected_protocol = "text"
-            self._apply_preset("text")
-            logger.info("Auto-detect: reconnected in text mode (send_format=text)")
         except Exception as exc:
-            logger.warning("Auto-detect: reconnect failed after binary probe: %s", exc)
-            self._detected_protocol = "text"
-            self._apply_preset("text")
+            raise ConnectionError(
+                f"WebSocket auto-detect failed: binary probe was rejected by "
+                f"the agent, and the follow-up reconnect for text mode also "
+                f"failed: {exc}. The connection is unusable. Hint: set "
+                f"ws_protocol='text' or ws_protocol='openai-realtime' in "
+                f"[connector] to skip auto-detect."
+            ) from exc
+
+        self._detected_protocol = "text"
+        self._apply_preset("text")
+        logger.info("Auto-detect: reconnected in text mode (send_format=text)")
 
     def _apply_preset(self, preset_name: str) -> None:
         """Apply a protocol preset, updating internal state."""
@@ -373,8 +405,17 @@ class WebSocketConnector(BaseConnector):
                 logger.debug("Sent caller text: %s", caller_text[:80])
             return
 
-        # Send audio in chunks to simulate real-time streaming
+        # Send audio in chunks at (approximately) real-time. The sleep
+        # duration is derived from the chunk's actual playback time so the
+        # agent sees the caller speak at human cadence, not 5x real-time —
+        # which would otherwise compress every latency / interruption /
+        # turn-end measurement the orchestrator records.
         chunk_size = _DEFAULT_CHUNK_BYTES
+        bytes_per_second = self.required_sample_rate * 2  # 16-bit mono
+        chunk_seconds = chunk_size / bytes_per_second
+        send_speed = float(self._send_speed)
+        sleep_per_chunk = (chunk_seconds / send_speed) if send_speed > 0 else 0.0
+
         data = audio.data
         for offset in range(0, len(data), chunk_size):
             chunk = data[offset : offset + chunk_size]
@@ -386,8 +427,8 @@ class WebSocketConnector(BaseConnector):
                 await self._ws.send(payload)
             else:
                 await self._ws.send(chunk)
-            # Pace sending to ~real-time to avoid overwhelming the agent
-            await asyncio.sleep(0.02)
+            if sleep_per_chunk > 0:
+                await asyncio.sleep(sleep_per_chunk)
 
         # Send explicit end-of-turn commit if configured
         if self._commit_message is not None:

@@ -1,0 +1,39 @@
+# CODEOWNERS — required reviewers for sensitive surfaces.
+#
+# These paths shape the product's headline number, its trust story, or the
+# protocol contract with the native bridge. A second pair of eyes is mandatory.
+
+# Default owner — everything else
+*                                       @maintainers
+
+# Scoring math: the number IS the product
+/src/decibench/evaluators/score.py      @maintainers
+/src/decibench/evaluators/aggregate.py  @maintainers
+/src/decibench/orchestrator.py          @maintainers
+
+# Storage + migrations — corruption is permanent
+/src/decibench/store/                   @maintainers
+
+# Configuration + secrets surface
+/src/decibench/config.py                @maintainers
+/src/decibench/secrets.py               @maintainers
+
+# Bridge protocol contract: drift here breaks Python / Node compatibility
+/src/decibench/bridge/                  @maintainers
+/bridge_sidecar/src/protocol.ts         @maintainers
+/docs/bridge-protocol.md                @maintainers
+
+# Source of truth for what we claim to support
+/docs/support-matrix.yaml               @maintainers
+/docs/limitations.md                    @maintainers
+
+# Tests that enforce trust invariants
+/tests/test_docs_truth.py               @maintainers
+/tests/test_evaluators/test_score.py    @maintainers
+/tests/test_latency_aggregation.py      @maintainers
+/tests/test_evaluator_parity.py         @maintainers
+
+# Release plumbing
+/.github/workflows/                     @maintainers
+/pyproject.toml                         @maintainers
+/CHANGELOG.md                           @maintainers

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from decibench.mcp.server import mcp
-from decibench.mcp._helpers import get_config, get_store, format_score_breakdown
+from decibench.mcp._helpers import get_config, get_store, format_score_breakdown, preflight_check, format_run_result_rich
 
 
 @mcp.tool()
@@ -11,7 +13,8 @@ async def run_test(
     target: str,
     suite: str = "quick",
     mode: str = "deterministic",
-) -> str:
+    cost_cap_usd: float = 0.5,
+) -> dict[str, Any]:
     """Run a Decibench test suite against a voice agent.
 
     This is the core testing tool. It connects to the voice agent, runs
@@ -42,6 +45,11 @@ async def run_test(
 
     config = get_config()
 
+    # Pre-flight check before we even try to run
+    preflight = preflight_check(target, mode, config)
+    if not preflight["ok"]:
+        return preflight
+
     # For semantic-local mode, configure Ollama as judge
     if mode == "semantic-local":
         from decibench.providers.judge.ollama import (
@@ -51,31 +59,23 @@ async def run_test(
         )
 
         if not is_ollama_running():
-            return (
-                "Ollama is not running. Start it with:\n"
-                "  ollama serve\n\n"
-                "Install from: https://ollama.com"
-            )
+            return {
+                "ok": False,
+                "findings": ["Ollama is not running."],
+                "suggested_actions": ["Start it with: ollama serve", "Install from: https://ollama.com"]
+            }
 
         if not ensure_model(show_progress=False):
-            return (
-                "Failed to pull the local model. Run manually:\n"
-                "  ollama pull llama3.2:3b"
-            )
+            return {
+                "ok": False,
+                "findings": ["Failed to pull the local model."],
+                "suggested_actions": ["Run manually: ollama pull llama3.2:3b"]
+            }
 
         judge_uri, judge_model, api_key = setup_ollama_judge()
         config.providers.judge = judge_uri
         config.providers.judge_model = judge_model
         config.providers.judge_api_key = api_key
-
-    # For semantic mode, ensure a judge is configured
-    elif mode == "semantic" and not config.has_judge:
-        return (
-            "Semantic mode requires an LLM judge. Set up a provider first:\n"
-            "  export GEMINI_API_KEY='your-key'  (cheapest)\n"
-            "  export OPENAI_API_KEY='your-key'\n\n"
-            "Or use mode='semantic-local' for free local evaluation with Ollama."
-        )
 
     orchestrator = Orchestrator(config)
     result = await orchestrator.run_suite(target=target, suite=suite)
@@ -85,37 +85,11 @@ async def run_test(
     run_id = store.save_suite_result(result)
 
     # Format output
-    lines = [
-        f"## Decibench Score: {result.decibench_score:.1f}/100",
-        "",
-        format_score_breakdown(result),
-        "",
-        f"**Suite**: {result.suite} ({result.total_scenarios} scenarios)",
-        f"**Target**: {result.target}",
-        f"**Passed**: {result.passed}/{result.total_scenarios}",
-        f"**Duration**: {result.duration_seconds:.1f}s",
-        f"**Run ID**: `{run_id}`",
-    ]
-
-    if result.evaluation_mode == "semantic":
-        lines.append(f"**Judge**: {result.judge_model}")
-
-    # Top failures
-    failed = [r for r in result.results if not r.passed]
-    if failed:
-        lines.append("")
-        lines.append("### Failed Scenarios")
-        for r in failed[:5]:
-            failed_metrics = [
-                f"{m.name}: {m.value}{m.unit}" for m in r.metrics.values() if not m.passed
-            ]
-            lines.append(f"- **{r.scenario_id}** (score: {r.score:.0f}) — {', '.join(failed_metrics[:3])}")
-
-    return "\n".join(lines)
+    return format_run_result_rich(result, run_id)
 
 
 @mcp.tool()
-async def run_quick_test(target: str = "demo") -> str:
+async def run_quick_test(target: str = "demo") -> dict[str, Any]:
     """Run a fast 10-scenario test. Great for a quick health check.
 
     Uses deterministic mode (free, no API key needed).

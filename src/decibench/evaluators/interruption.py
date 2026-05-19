@@ -32,6 +32,10 @@ class InterruptionEvaluator(BaseEvaluator):
     def name(self) -> str:
         return "interruption"
 
+    @property
+    def requires_events(self) -> bool:
+        return True
+
     async def evaluate(
         self,
         scenario: Scenario,

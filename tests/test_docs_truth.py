@@ -91,6 +91,86 @@ def test_minimal_required_docs_exist() -> None:
         assert path.is_file(), f"Missing required doc: docs/{name}"
 
 
+def test_every_registered_connector_appears_in_matrix() -> None:
+    """Inverse drift: code-registered connectors MUST be in the matrix.
+
+    The forward check (matrix → code) catches "we listed something as
+    shipped that doesn't exist." This inverse check catches the much more
+    common failure: "we shipped a connector but forgot to flip the matrix
+    out of `planned`." The README will market it; the matrix is the source
+    of truth; drift kills user trust.
+    """
+    matrix = _load_matrix()
+    matrix_schemes: dict[str, str] = {}
+    for name, entry in matrix["connectors"].items():
+        scheme = _scheme_for(entry, name)
+        matrix_schemes[scheme] = entry.get("status", "planned")
+
+    for scheme in _connector_registry:
+        status = matrix_schemes.get(scheme)
+        assert status is not None, (
+            f"Connector scheme `{scheme}` is registered in code but is missing "
+            f"from docs/support-matrix.yaml. Add it under `connectors:`."
+        )
+        assert status != "planned", (
+            f"Connector scheme `{scheme}` is registered in code but the matrix "
+            f"lists it as `planned`. Flip the status to `shipped`/`beta`/`experimental`."
+        )
+
+
+def test_every_evaluator_in_standard_stack_appears_in_matrix() -> None:
+    """Same inverse-drift principle for the canonical evaluator set."""
+    from decibench.evaluators import standard_stack
+
+    matrix = _load_matrix()
+    evaluator_section = matrix.get("evaluators", {})
+
+    # Map evaluator.name → matrix-key. Most match directly; some matrix entries
+    # group related metrics under a different key (wer/cer, mos, stoi).
+    name_to_matrix_key = {
+        "wer": ("wer",),
+        "latency": ("latency",),
+        "mos": ("mos",),
+        "intelligibility_estimate": ("stoi",),
+        "silence": ("silence",),
+        "compliance": ("compliance",),
+        "task_completion": ("task_completion",),
+        "hallucination": ("hallucination",),
+        "interruption": ("interruption",),
+    }
+
+    for ev in standard_stack(has_audio=True, has_events=True, has_judge=True):
+        candidates = name_to_matrix_key.get(ev.name, (ev.name,))
+        found = any(c in evaluator_section for c in candidates)
+        assert found, (
+            f"Evaluator `{ev.name}` is in the canonical standard_stack() but "
+            f"no matching entry exists in docs/support-matrix.yaml `evaluators:` "
+            f"(tried: {candidates})."
+        )
+
+
+def test_readme_does_not_reference_nonexistent_maintainer_docs() -> None:
+    """Closes the 'README points at files that don't exist' drift class."""
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    # If the README literally names a file like `architecture.md` in backticks,
+    # that file must exist at the repo root or under docs/.
+    import re
+
+    referenced = set(re.findall(r"`([a-z][a-z0-9_-]*\.md)`", readme))
+    # Exclude README itself and well-known repo files we explicitly check elsewhere.
+    excluded = {"readme.md"}
+    missing = [
+        name for name in referenced
+        if name.lower() not in excluded
+        and not (REPO_ROOT / name).is_file()
+        and not (DOCS_DIR / name).is_file()
+    ]
+    assert not missing, (
+        f"README references files that don't exist on disk: {missing}. "
+        f"Either add them or remove the references."
+    )
+
+
 def test_native_connectors_not_marketed_as_shipped() -> None:
     """Guard against silent drift: README must not call native Retell/Vapi shipped.
 

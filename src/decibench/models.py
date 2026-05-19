@@ -214,6 +214,13 @@ class EvalResult(BaseModel):
     transcript: list[dict[str, Any]] = Field(default_factory=list)
     run_index: int = 0
     spans: list[TraceSpan] = Field(default_factory=list)
+    # Reproducibility telemetry: populated only when runs_per_scenario > 1.
+    # ``score_stddev`` is the std-dev of per-run scores for this scenario.
+    # ``flaked`` is True if pass/fail flipped across runs (the strongest
+    # signal of an unstable agent).
+    score_stddev: float = 0.0
+    flaked: bool = False
+    run_count: int = 1
 
     @property
     def metric_values(self) -> dict[str, float]:
@@ -249,9 +256,16 @@ class SuiteResult(BaseModel):
     judge_model: str = ""  # Which LLM judge was used, or "none"
     evaluation_mode: str = "deterministic"  # "deterministic" or "semantic"
     judge_provider: str = ""  # "anthropic", "openai", "gemini", or ""
-    config_hash: str = ""
+    config_hash: str = ""    # sha256 of the SECRET-REDACTED config dump
+    suite_version: str = ""  # version stamp from the suite's suite.toml
     timestamp: str = ""
-    decibench_version: str = "0.1.0"
+    decibench_version: str = "1.0.0"
+    # Reproducibility telemetry. ``flake_rate`` is the fraction of scenarios
+    # whose pass/fail outcome was not stable across runs (only meaningful
+    # when runs_per_scenario > 1). ``score_stddev_avg`` averages the
+    # per-scenario score std-devs.
+    flake_rate: float = 0.0
+    score_stddev_avg: float = 0.0
 
     @classmethod
     def compute_config_hash(cls, config_dict: dict[str, Any]) -> str:

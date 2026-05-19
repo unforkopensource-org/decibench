@@ -52,6 +52,9 @@ _REDACTION_RULES: list[tuple[re.Pattern[str], str]] = [
 
     # Email Addresses
     (re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"), "[REDACTED_EMAIL]"),
+
+    # Common API Keys / Bearer Tokens
+    (re.compile(r"\b(?:sk-[a-zA-Z0-9_]{20,}|Bearer\s+[a-zA-Z0-9_\-\.]{20,})\b"), "[REDACTED_API_KEY]"),
 ]
 
 class RedactionPolicy:
@@ -88,7 +91,12 @@ class RedactionPolicy:
 
         redacted_data: dict[str, Any] = {}
         for key, value in data.items():
-            if isinstance(value, str):
+            k_str = str(key).lower()
+            is_secret = any(sec in k_str for sec in ("api_key", "secret", "token", "password", "credentials", "key"))
+
+            if is_secret:
+                redacted_data[key] = "[REDACTED_SECRET]"
+            elif isinstance(value, str):
                 redacted_data[key] = self.redact_text(value)
             elif isinstance(value, dict):
                 redacted_data[key] = self.redact_dict(value)

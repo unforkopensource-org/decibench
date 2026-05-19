@@ -264,3 +264,127 @@ export function useGenerateRegression() {
       }),
   })
 }
+
+// ---------------------------------------------------------------------- RAG hooks
+
+export interface RagDocument {
+  id: string
+  title: string
+  chunk_count: number
+  bytes: number
+  embedding_provider: string
+  ingested_at: string
+}
+
+export interface RagStats {
+  store_path: string
+  documents: number
+  chunks: number
+  bytes: number
+  providers: string[]
+}
+
+export interface RagSearchResult {
+  score: number
+  text: string
+  section_path: string[]
+  document_id: string
+  chunk_id: string
+}
+
+export function useRagDocuments() {
+  return useQuery({
+    queryKey: ['rag-documents'],
+    queryFn: () => api<RagDocument[]>('/rag/documents'),
+  })
+}
+
+export function useRagStats() {
+  return useQuery({
+    queryKey: ['rag-stats'],
+    queryFn: () => api<RagStats>('/rag/stats'),
+  })
+}
+
+export function useIngestText() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { text: string; title: string; cloud_confirm?: boolean }) =>
+      api<any>('/rag/ingest-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rag-documents'] })
+      queryClient.invalidateQueries({ queryKey: ['rag-stats'] })
+    },
+  })
+}
+
+export function useIngestFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { files: File[]; cloud_confirm?: boolean }) => {
+      const formData = new FormData()
+      data.files.forEach(f => formData.append('files', f))
+      if (data.cloud_confirm) formData.append('cloud_confirm', 'true')
+      
+      // We cannot use the `api` wrapper directly because fetch handles FormData Content-Type boundary automatically
+      // when headers['Content-Type'] is NOT set. Our api wrapper sets Accept but doesn't force Content-Type.
+      return api<any>('/rag/ingest-files', {
+        method: 'POST',
+        body: formData,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rag-documents'] })
+      queryClient.invalidateQueries({ queryKey: ['rag-stats'] })
+    },
+  })
+}
+
+export function useRagSearch(query: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ['rag-search', () => toValue(query)],
+    queryFn: () => {
+      const q = encodeURIComponent(toValue(query))
+      return q ? api<RagSearchResult[]>(`/rag/search?query=${q}`) : Promise.resolve([])
+    },
+    enabled: () => !!toValue(query),
+  })
+}
+
+export function useRemoveDocument() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (documentId: string) =>
+      api<any>(`/rag/documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rag-documents'] })
+      queryClient.invalidateQueries({ queryKey: ['rag-stats'] })
+    },
+  })
+}
+
+export function useStartRun() {
+  return useMutation({
+    mutationFn: (data: { target: string; suite: string; mode: string; parallel?: number }) =>
+      api<{ task_id: string; stream_url: string; status: string }>('/runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+  })
+}
+
+export function useRagSynthesize() {
+  return useMutation({
+    mutationFn: (data: { topics: string[]; suite: string }) =>
+      api<any>('/rag/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+  })
+}

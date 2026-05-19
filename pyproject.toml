@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "decibench"
-version = "0.1.0"
-description = "The open standard for voice agent quality. Free, transparent, reproducible."
+version = "1.0.0"
+description = "Deterministic and semantic testing for conversational AI."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
@@ -46,16 +46,20 @@ tts-edge = ["edge-tts>=7.2.8"]
 stt-whisper = ["faster-whisper>=1.2.1"]
 audio-quality = ["speechmos>=2.3", "onnxruntime>=1.17"]
 mcp = ["mcp>=1.9"]
-server = ["fastapi>=0.115", "uvicorn>=0.34"]
+server = ["fastapi>=0.115", "uvicorn>=0.34", "python-multipart>=0.0.9"]
+rag = ["sentence-transformers>=3.0"]
 all = [
-    "decibench[tts-edge,stt-whisper,audio-quality,mcp,server]",
+    "decibench[tts-edge,stt-whisper,audio-quality,mcp,server,rag]",
 ]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.25",
     "pytest-timeout>=2.4",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
     "ruff>=0.8",
     "mypy>=1.14",
+    "pip-audit>=2.7",
 ]
 
 [project.scripts]
@@ -132,3 +136,35 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "slow: marks tests as slow (deselect with -m 'not slow')",
+    "hypothesis: property-based tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["decibench"]
+omit = [
+    "*/tests/*",
+    "*/__main__.py",
+    "*/mcp/*",
+]
+
+[tool.coverage.report]
+# Project-wide floor. Honest baseline: provider modules and reporters are at
+# 10-30% because their happy paths require provider API keys or a Node bridge
+# subprocess in the test environment. The v1 implementation plan ratchets
+# this number up per phase:
+#   P1 end → 55%   P2 end → 60%   P3 end → 65%   P4 end → 70%   P5 end → 75%
+#   P6/release → 78% (with critical-path modules at ≥ 95%)
+# Critical-path floors are enforced per-file via the release-check script.
+fail_under = 50
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+]

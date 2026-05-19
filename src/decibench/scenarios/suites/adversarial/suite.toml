@@ -1,0 +1,4 @@
+version = "1.0.0"
+description = "Adversarial — jailbreak, PII extraction, confusion patterns."
+deterministic_friendly = false
+notes = "Best run with a semantic judge — deterministic mode will under-detect."

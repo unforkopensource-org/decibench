@@ -1,0 +1,52 @@
+id: realestate-happy-path-001
+version: 1
+mode: scripted
+description: Agent offers to book and obtains a tentative slot.
+tags:
+- happy_path
+- booking
+metadata: {}
+persona:
+  name: Default
+  accent: en-US
+  voice: ''
+  speaking_speed: 1.0
+  patience_level: medium
+  background_noise: clean
+  noise_level_db: 15.0
+  behavior: {}
+conversation:
+- role: caller
+  text: Hi, is now a good time to talk?
+  expect: null
+  audio_overrides: {}
+- role: agent
+  text: null
+  expect:
+    intent: yes_good_time
+    must_ask: []
+    must_not_say: []
+    must_include:
+    - good time
+    must_extract: {}
+    max_latency_ms: 1500
+    tone: null
+  audio_overrides: {}
+goal: Book a meeting with an Automation specialist
+success_criteria:
+- type: task_completion
+  description: Agent confirms slot and gathers availability
+  check: llm_judge
+  rule: null
+  threshold: null
+  p95_max_ms: null
+tool_mocks: []
+variants:
+  noise_levels:
+  - clean
+  accents:
+  - en-US
+  speeds:
+  - 1.0
+timeout_seconds: 60
+max_turns: 6

@@ -1,7 +1,7 @@
 {
   "name": "decibench-dashboard",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Vue 3 + Vite failure-analysis workbench for the Decibench API.",
   "scripts": {

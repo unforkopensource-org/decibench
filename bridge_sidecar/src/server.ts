@@ -293,7 +293,28 @@ function timeoutPromise(ms: number, code: string, message: string): Promise<neve
 
 function main(): void {
   const portEnv = Number(process.env.DECIBENCH_BRIDGE_PORT ?? DEFAULT_PORT);
-  const wss = new WebSocketServer({ host: HOST, port: portEnv });
+  const expectedToken = process.env.DECIBENCH_BRIDGE_TOKEN;
+  
+  const wss = new WebSocketServer({ 
+    host: HOST, 
+    port: portEnv,
+    verifyClient: (info, cb) => {
+      if (!expectedToken) {
+        return cb(true);
+      }
+      try {
+        const url = new URL(info.req.url || "", `http://${info.req.headers.host || HOST}`);
+        if (url.searchParams.get("token") === expectedToken) {
+          cb(true);
+        } else {
+          log.warn("rejected connection: invalid token");
+          cb(false, 401, "Unauthorized");
+        }
+      } catch (e) {
+        cb(false, 400, "Bad Request");
+      }
+    }
+  });
 
   wss.on("listening", () => {
     const addr = wss.address();

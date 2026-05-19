@@ -1,0 +1,3 @@
+version = "1.0.0"
+description = "Acoustic stress — slow / fast speakers, street noise."
+deterministic_friendly = true
