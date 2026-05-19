@@ -3,11 +3,11 @@
 
   <h1>decibench</h1>
 
-  <p><code>pip install decibench</code></p>
+  <p><code>pip install git+https://github.com/unforkopensource-org/decibench.git</code></p>
 
   <p>
     <a href="https://github.com/unforkopensource-org/decibench/actions"><img src="https://img.shields.io/github/actions/workflow/status/unforkopensource-org/decibench/ci.yml?style=flat-square&label=ci&color=39FF14" alt="CI" /></a>
-    <a href="https://pypi.org/project/decibench/"><img src="https://img.shields.io/pypi/v/decibench?style=flat-square&color=00F0FF" alt="PyPI" /></a>
+    <a href="https://github.com/unforkopensource-org/decibench"><img src="https://img.shields.io/badge/v1.0.0-release-00F0FF?style=flat-square" alt="v1.0.0" /></a>
     <a href="https://github.com/unforkopensource-org/decibench/blob/main/LICENSE"><img src="https://img.shields.io/github/license/unforkopensource-org/decibench?style=flat-square&color=8A2BE2" alt="License" /></a>
     <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   </p>
@@ -66,7 +66,13 @@ You find out from your customers, not your test suite — because you don't have
 ## Quick Start
 
 ```bash
-pip install decibench
+# Install from source
+pip install git+https://github.com/unforkopensource-org/decibench.git
+
+# Or clone and install locally
+git clone https://github.com/unforkopensource-org/decibench.git
+cd decibench
+pip install -e .
 
 # Verify the install
 decibench doctor
@@ -269,26 +275,30 @@ audio_quality_weight = 0.10
 
 ---
 
-## Installation Options
+## Installation
 
 ```bash
-# Core (deterministic testing, zero API keys needed)
-pip install decibench
+# Install from GitHub (recommended)
+pip install git+https://github.com/unforkopensource-org/decibench.git
 
-# With semantic evaluation
-pip install decibench[mcp]
+# With semantic evaluation + MCP server
+pip install "decibench[mcp] @ git+https://github.com/unforkopensource-org/decibench.git"
 
 # With RAG-augmented testing
-pip install decibench[rag]
+pip install "decibench[rag] @ git+https://github.com/unforkopensource-org/decibench.git"
 
 # Everything
-pip install decibench[all]
+pip install "decibench[all] @ git+https://github.com/unforkopensource-org/decibench.git"
 
-# Development
+# Or clone for local development
+git clone https://github.com/unforkopensource-org/decibench.git
+cd decibench
 pip install -e ".[dev]"
 ```
 
 **Requirements:** Python 3.11+ · macOS / Linux / WSL
+
+> **Note:** PyPI publishing is coming soon. For now, install directly from GitHub.
 
 ---
 
