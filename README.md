@@ -1,102 +1,319 @@
 <div align="center">
   <br />
-  <picture>
-    <img src="docs/assets/logo.png" alt="Decibench Logo" width="200" />
-  </picture>
-  <br />
-  <h1><b>Decibench</b></h1>
-  <p><b>Unit Testing for the Voice AI Era</b></p>
-  
+
+  <h1>decibench</h1>
+
+  <p><code>pip install decibench</code></p>
+
   <p>
-    <a href="https://github.com/unforkopensource-org/decibench/actions"><img src="https://img.shields.io/github/actions/workflow/status/unforkopensource-org/decibench/ci.yml?style=flat-square&color=39FF14" alt="CI Status" /></a>
-    <a href="https://pypi.org/project/decibench/"><img src="https://img.shields.io/pypi/v/decibench?style=flat-square&color=00F0FF" alt="PyPI Version" /></a>
+    <a href="https://github.com/unforkopensource-org/decibench/actions"><img src="https://img.shields.io/github/actions/workflow/status/unforkopensource-org/decibench/ci.yml?style=flat-square&label=ci&color=39FF14" alt="CI" /></a>
+    <a href="https://pypi.org/project/decibench/"><img src="https://img.shields.io/pypi/v/decibench?style=flat-square&color=00F0FF" alt="PyPI" /></a>
     <a href="https://github.com/unforkopensource-org/decibench/blob/main/LICENSE"><img src="https://img.shields.io/github/license/unforkopensource-org/decibench?style=flat-square&color=8A2BE2" alt="License" /></a>
+    <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square" alt="Python" />
   </p>
 
   <p>
-    <i>Simulate thousands of concurrent calls • Detect 100% of hallucinations • Score latency down to the millisecond</i>
+    <b>The open testing standard for voice AI agents.</b><br/>
+    Deterministic + semantic + RAG-augmented evaluation.<br/>
+    Local-first. Zero telemetry. One CLI.
   </p>
+
 </div>
 
-<br />
+<br/>
 
 ---
 
-## ⚡ Why Decibench?
+## The Problem
 
-Building a voice AI agent is easy. Getting it to production without it hallucinating, lagging, or failing during interruptions is incredibly hard. For mission-critical agents in healthcare, banking, or real estate, manual testing simply doesn't scale.
+You built a voice AI agent. It works in your demo. Then in production:
 
-Decibench is a **local-first** testing platform designed specifically for the complexities of Voice AI. 
+- It hallucinates a refund policy that doesn't exist
+- It takes 4 seconds to respond and the caller hangs up
+- It crumbles when someone interrupts mid-sentence
+- It leaks a customer's SSN in the transcript log
 
-Instead of making manual phone calls, Decibench allows your engineering team to:
-- 📞 **Simulate thousands of concurrent calls** locally or in CI/CD.
-- ⏱️ **Measure Latency** with pinpoint millisecond accuracy (p50/p90 targets).
-- 🧠 **Detect Hallucinations** using semantic LLM-as-a-Judge grading.
-- 🛑 **Ensure Compliance** and handle hostile user interruptions.
+You find out from your customers, not your test suite — because you don't have one.
 
-<br />
-
----
-
-## 🧠 3 Powerful Testing Modes
-
-Whether you are testing an internal script or evaluating a deep conversational agent, Decibench scales with your workflow.
-
-### 1️⃣ Deterministic (`--mode deterministic`)
-Fast, rigid, free string-matching tests. Perfect for ensuring specific keywords, disclaimers, or exact greetings are present.
-*Runs entirely locally. 0 API costs.*
-
-### 2️⃣ Semantic (`--mode semantic`)
-Slower, nuanced testing using an LLM Judge (e.g. `gpt-4o`). The judge scores the agent on conversational accuracy, compliance, and hallucination rates based on strict guidelines.
-*Essential for testing complex multi-turn logic.*
-
-### 3️⃣ RAG-Augmented (`--mode semantic+rag`)
-The ultimate stress test. Upload your PDF training documents or knowledge bases, and Decibench will **auto-generate adversarial test suites** based on your own documentation to actively try and break your agent.
+**Decibench fixes this.** It's `pytest` for voice agents.
 
 ---
 
-## 🚀 Quick Start
+## How It Works
 
-### Installation
-Decibench is built in Python but supports any Voice Agent endpoint.
-
-```bash
-# Install the CLI tool
-pip install decibench
-
-# Install the optional headless browser sidecar for Telephony bridging
-npm install -g decibench-bridge
+```
+┌─────────────────────────────────────────────────────────┐
+│                    decibench run                        │
+│                                                         │
+│  ┌──────────┐    TTS     ┌──────────────┐   Evaluate    │
+│  │ Scenario │ ────────▶  │  Your Agent  │ ───────────▶  │
+│  │  (YAML)  │   Audio    │  (any target)│   10 metrics  │
+│  └──────────┘  ◀──────── └──────────────┘               │
+│                    STT                                   │
+│                                                         │
+│  Score: 87/100 │ Latency p95: 1.2s │ WER: 3.1%         │
+│  ✓ compliance  │ ✓ hallucination   │ ✗ interruption     │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Run Your First Suite
-Create a `decibench.toml` configuration file in your project root, then simply run:
+1. You write scenarios in YAML (or auto-generate them from your docs)
+2. Decibench synthesizes caller audio, calls your agent, transcribes the response
+3. 10 evaluators score every call across latency, accuracy, compliance, and more
+4. Results go to a local SQLite DB → Rich CLI report, HTML, JUnit, or a full Vue dashboard
+
+---
+
+## Quick Start
 
 ```bash
-# Run a quick suite locally against your Vapi/Retell agent
-decibench run target=vapi suite=quick
+pip install decibench
 
-# View the beautiful dashboard to debug failures
+# Verify the install
+decibench doctor
+
+# Run the built-in demo (zero config, zero API keys)
+decibench run target=demo suite=quick
+
+# Open the dashboard
 decibench serve
 ```
 
+### Test your own agent
+
+```bash
+# WebSocket endpoint (generic — works with any agent)
+decibench run target=ws://localhost:8080/ws suite=quick
+
+# Native Vapi / Retell / ElevenLabs
+decibench run target=vapi://agent_abc123 suite=standard
+
+# Twilio Media Streams mock (no call credits needed)
+decibench run target=twilio://localhost:5050/media suite=realestate
+
+# Spawn a local process and pipe PCM through stdin/stdout
+decibench run target='exec:"python my_agent.py"' suite=quick
+```
+
 ---
 
-## 🛡️ Secure & Local-First
+## Three Testing Modes
 
-Decibench is built for the enterprise. 
-- **Zero Telemetry**: We do not track your tests.
-- **Privacy Redaction Engine**: Automatically scrubs API keys (`sk-...`), SSNs, Credit Cards, and passwords from your test payloads before saving them to the local SQLite database.
-- **Local SQLite DB**: Your proprietary call transcripts never leave your machine unless you explicitly export them.
+| Mode | What it does | Cost | Speed |
+|:--|:--|:--|:--|
+| **`deterministic`** | Exact string matching, regex, keyword checks | Free | ~ms |
+| **`semantic`** | LLM-as-Judge scores accuracy, compliance, hallucination | ~$0.01/call | ~2s |
+| **`semantic+rag`** | Upload your docs → auto-generate adversarial test suites | ~$0.03/call | ~5s |
+
+```bash
+# Free deterministic checks only
+decibench run target=demo suite=quick --mode deterministic
+
+# Full semantic evaluation with GPT-4o / Claude / Gemini / Ollama
+decibench run target=ws://... suite=standard --mode semantic
+
+# Generate tests from your own knowledge base
+decibench rag ingest ./docs/training-manual.pdf
+decibench rag synthesize --suite-name my-tests --count 20
+decibench run target=ws://... suite=my-tests --mode semantic+rag
+```
 
 ---
 
-## 🤝 Unfork Open Source
+## 10 Built-In Evaluators
 
-Decibench is proudly built and maintained by **[Unfork Open Source](https://github.com/unforkopensource-org)**. 
+Every call is scored across all applicable metrics automatically:
 
-Our mission is to empower developers with high-performance, developer-first AI infrastructure. If you love this project, please consider giving it a ⭐ on GitHub!
+| Evaluator | Metric | What it catches |
+|:--|:--|:--|
+| **Latency** | `p50` `p90` `p95` `ttfb` | Slow responses that cause hangups |
+| **WER / CER** | Word/character error rate | Garbled or inaccurate speech |
+| **Hallucination** | LLM-graded factual accuracy | Agent invents information |
+| **Task Completion** | Did the agent achieve the goal? | Broken conversation flows |
+| **Compliance** | Mandatory disclosures, disclaimers | Regulatory violations |
+| **Interruption** | Barge-in handling | Agent crashes on user interrupts |
+| **Silence** | Dead air detection | Agent goes silent mid-call |
+| **MOS** | Mean Opinion Score (DNSMOS) | Audio quality degradation |
+| **STOI** | Short-Time Objective Intelligibility | Unintelligible speech |
+| **Composite Score** | Weighted aggregate of all metrics | Single pass/fail number |
+
+---
+
+## Connectors
+
+Decibench talks to your agent, not the other way around. No SDK to install in your agent code.
+
+| Connector | Target URI | Status |
+|:--|:--|:--|
+| **Demo** | `demo://` | ✅ Shipped |
+| **WebSocket** | `ws://host:port/path` | ✅ Shipped |
+| **HTTP** | `http://host/endpoint` | ✅ Shipped |
+| **Process** | `exec:"command"` | ✅ Shipped |
+| **ElevenLabs** | `elevenlabs://agent_id` | ✅ Shipped |
+| **Twilio Mock** | `twilio://host/path` | ✅ Shipped |
+| **Retell** | `retell://agent_id` | 🧪 Experimental |
+| **Vapi** | `vapi://agent_id` | 🧪 Experimental |
+| **LiveKit** | — | 📋 Planned |
+| **Bland** | — | 📋 Planned |
+
+---
+
+## LLM Judge Providers
+
+Semantic evaluation works with any OpenAI-compatible API:
+
+```toml
+# decibench.toml
+[judge]
+provider = "openai"     # or "anthropic", "gemini", "ollama"
+model    = "gpt-4o"     # or "claude-sonnet-4-20250514", "gemini-2.5-flash", "llama3"
+
+# Self-hosted? Point at any OpenAI-compatible endpoint
+[judge]
+provider = "openai"
+model    = "mistral-7b"
+base_url = "http://localhost:11434/v1"  # Ollama, vLLM, LM Studio, etc.
+```
+
+---
+
+## MCP Server
+
+Decibench ships a Model Context Protocol server so AI coding agents (Cursor, Windsurf, Claude Code) can run and analyze your voice tests directly:
+
+```bash
+pip install decibench[mcp]
+decibench-mcp
+```
+
+Tools exposed: `run_test`, `list_runs`, `analyze_failures`, `generate_scenario`, `manage_suites`, and more.
+
+---
+
+## CLI Reference
+
+```
+decibench run           Run a test suite against a target
+decibench compare       Side-by-side comparison of two targets
+decibench serve         Launch the Vue dashboard + REST API
+decibench import        Import production call logs (Vapi, Retell, JSONL)
+decibench evaluate-calls Score imported calls against evaluators
+decibench replay        Re-evaluate a previous run with different settings
+decibench rag ingest    Ingest documents into the RAG corpus
+decibench rag synthesize Auto-generate test scenarios from your docs
+decibench scenario      List / inspect / generate scenarios
+decibench runs          List previous test runs
+decibench scoring       View scoring weights and policies
+decibench doctor        Verify installation and dependencies
+decibench auth          Manage API key storage (keyring-backed)
+decibench bridge        Launch the headless browser sidecar
+```
+
+---
+
+## Architecture
+
+```
+decibench/
+├── cli/                 # Click CLI — thin wrappers, no business logic
+├── connectors/          # Protocol adapters (WS, HTTP, Twilio, ElevenLabs, …)
+├── evaluators/          # 10 metric evaluators (latency, WER, hallucination, …)
+├── providers/           # Pluggable TTS, STT, and LLM Judge backends
+├── reporters/           # Output: Rich terminal, HTML, JSON, JUnit, Markdown
+├── rag/                 # Document ingestion, embedding, retrieval, synthesis
+├── mcp/                 # Model Context Protocol server (stdio + SSE)
+├── store/               # SQLite with migrations, privacy redaction engine
+├── bridge/              # Protocol for headless browser sidecar (WebRTC targets)
+├── scenarios/           # Built-in test suites (quick, standard, acoustic, adversarial, realestate)
+└── api/                 # FastAPI REST server + embedded Vue dashboard
+```
+
+---
+
+## Privacy & Security
+
+Decibench is built for teams that handle sensitive call data:
+
+- **Zero telemetry** — no data leaves your machine, ever
+- **PII redaction engine** — phone numbers, SSNs, emails, and credit cards are scrubbed from transcripts before they hit the local SQLite database
+- **API keys in keyring** — secrets are stored in your OS keychain, not in config files
+- **Local-only storage** — SQLite database stays on your machine unless you explicitly export
+
+---
+
+## Configuration
+
+```toml
+# decibench.toml
+
+[target]
+uri = "ws://localhost:8080/ws"
+
+[tts]
+provider = "edge"        # Free Microsoft Edge TTS (default)
+
+[stt]
+provider = "faster_whisper"
+model    = "base"
+
+[judge]
+provider = "openai"
+model    = "gpt-4o"
+
+[scoring]
+latency_weight       = 0.25
+accuracy_weight      = 0.25
+compliance_weight    = 0.20
+task_completion_weight = 0.20
+audio_quality_weight = 0.10
+```
+
+---
+
+## Installation Options
+
+```bash
+# Core (deterministic testing, zero API keys needed)
+pip install decibench
+
+# With semantic evaluation
+pip install decibench[mcp]
+
+# With RAG-augmented testing
+pip install decibench[rag]
+
+# Everything
+pip install decibench[all]
+
+# Development
+pip install -e ".[dev]"
+```
+
+**Requirements:** Python 3.11+ · macOS / Linux / WSL
+
+---
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines. Run the test suite:
+
+```bash
+pip install -e ".[dev]"
+python -m pytest --timeout=60
+python -m ruff check src tests
+python -m ruff format --check src tests
+```
+
+---
+
+## License
+
+Apache 2.0 — see [`LICENSE`](LICENSE).
+
+---
 
 <div align="center">
   <br />
-  <p>Built with precision by developers, for developers.</p>
+  <p>
+    <sub>Built by <a href="https://github.com/unforkopensource-org"><b>Unfork Open Source</b></a></sub>
+  </p>
 </div>
