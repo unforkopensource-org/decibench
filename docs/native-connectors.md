@@ -12,9 +12,10 @@ treated as not yet usable in production.
 | `ws://`           | WebSocket | **Shipped**    | Real-time WebSocket agents               |
 | `exec:"..."`      | Process   | **Shipped**    | Local scripts / processes                |
 | `http://`         | HTTP      | **Shipped**    | Batch / non-realtime endpoints           |
+| `telnyx://`       | Telnyx Mock | **Experimental** | Local Telnyx Media Streaming testing  |
 | `retell://`       | Retell    | **Experimental** | Use `ws://` for raw Retell WS today    |
 | `vapi://`         | Vapi      | **Experimental** | Use `ws://` for raw Vapi WS today      |
-| LiveKit / ElevenLabs / Bland / SIP / PSTN | — | **Planned** | Not implemented                |
+| LiveKit / Bland / SIP / PSTN | n/a | **Planned** | Not implemented                |
 
 The same data lives in `docs/support-matrix.yaml` (machine-readable).
 
