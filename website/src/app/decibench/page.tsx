@@ -55,6 +55,12 @@ export default function DecibenchPage() {
             </a>
           </div>
 
+          <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center' }}>
+            <a href="https://www.producthunt.com/products/decibench?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-decibench" target="_blank" rel="noopener noreferrer">
+              <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1151303&theme=light&t=1779247744684" alt="DeciBench - pytest for voice AI agents. Local-first & open source. | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" />
+            </a>
+          </div>
+
           {/* Install command */}
           <div style={{
             marginTop: '3rem',
