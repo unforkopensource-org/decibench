@@ -58,6 +58,14 @@ connectors:
       server and pretends to be Twilio — sends the same connected/start/media
       messages a real call would, base64-encoded mulaw 8kHz. Use for local
       Twilio-flow testing without spending real call credits.
+  telnyx:
+    target_uri: telnyx://host/path
+    status: experimental
+    notes: >-
+      Telnyx Media Streaming mock. Connects to your voice agent's WebSocket
+      server and sends Telnyx-shaped connected/start/media/stop frames using
+      bidirectional RTP-style L16 16 kHz payloads. Marked experimental until
+      covered by a gated end-to-end test against a real Call Control stream.
   livekit:
     status: planned
     notes: "Planned. Will build on the same sidecar bridge."

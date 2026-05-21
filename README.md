@@ -156,6 +156,7 @@ Decibench talks to your agent, not the other way around. No SDK to install in yo
 | **Process** | `exec:"command"` | ✅ Shipped |
 | **ElevenLabs** | `elevenlabs://agent_id` | ✅ Shipped |
 | **Twilio Mock** | `twilio://host/path` | ✅ Shipped |
+| **Telnyx Mock** | `telnyx://host/path` | 🧪 Experimental |
 | **Retell** | `retell://agent_id` | 🧪 Experimental |
 | **Vapi** | `vapi://agent_id` | 🧪 Experimental |
 | **LiveKit** | — | 📋 Planned |

@@ -5,6 +5,7 @@ import decibench.connectors.elevenlabs
 import decibench.connectors.http
 import decibench.connectors.process
 import decibench.connectors.retell
+import decibench.connectors.telnyx
 import decibench.connectors.twilio_mock
 import decibench.connectors.vapi
 
