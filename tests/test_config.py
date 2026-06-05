@@ -11,7 +11,10 @@ import pytest
 from decibench.config import DecibenchConfig
 
 
-def test_default_config():
+def test_default_config(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr("decibench.secrets.keyring_available", lambda: False)
     config = DecibenchConfig.defaults()
     assert config.project.name == "my-voice-agent"
     assert config.target.default == "demo"

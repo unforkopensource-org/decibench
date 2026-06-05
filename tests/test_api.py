@@ -157,6 +157,63 @@ def test_audio_upload_test_endpoint_runs_agent_and_persists_results(monkeypatch,
     assert latest_response.json()["scenario_id"] == payload["evaluation"]["scenario_id"]
 
 
+def test_audio_upload_test_endpoint_invalid_mode(monkeypatch, tmp_path: Path):
+    store_path = tmp_path / "api.sqlite"
+    monkeypatch.setenv("DECIBENCH_STORE_PATH", str(store_path))
+
+    response = client.post(
+        "/audio-tests",
+        data={
+            "target": "demo",
+            "mode": "invalid-mode",
+            "caller_text": "Hello",
+        },
+        files={"audio": ("caller.wav", _wav_bytes(), "audio/wav")},
+    )
+
+    assert response.status_code == 400
+    assert "mode must be" in response.json()["detail"]
+
+
+def test_audio_upload_test_endpoint_empty_audio(monkeypatch, tmp_path: Path):
+    store_path = tmp_path / "api.sqlite"
+    monkeypatch.setenv("DECIBENCH_STORE_PATH", str(store_path))
+
+    response = client.post(
+        "/audio-tests",
+        data={
+            "target": "demo",
+            "mode": "deterministic",
+            "caller_text": "Hello",
+        },
+        files={"audio": ("caller.wav", b"", "audio/wav")},
+    )
+
+    assert response.status_code == 400
+    assert "empty" in response.json()["detail"].lower()
+
+
+def test_audio_upload_test_endpoint_must_include_parsing(monkeypatch, tmp_path: Path):
+    store_path = tmp_path / "api.sqlite"
+    monkeypatch.setenv("DECIBENCH_STORE_PATH", str(store_path))
+
+    response = client.post(
+        "/audio-tests",
+        data={
+            "target": "demo",
+            "mode": "deterministic",
+            "caller_text": "Hello",
+            "must_include": "hello,world\nfoo, bar",
+            "must_not_say": "no,way\nnever, say",
+        },
+        files={"audio": ("caller.wav", _wav_bytes(), "audio/wav")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["call_id"].startswith("audio-upload-")
+
+
 def test_call_timeline_endpoint(monkeypatch, tmp_path: Path):
     store_path = tmp_path / "api.sqlite"
     monkeypatch.setenv("DECIBENCH_STORE_PATH", str(store_path))

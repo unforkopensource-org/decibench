@@ -104,6 +104,10 @@ async def test_ws_send_speed_2x_halves_wall_time() -> None:
     assert 100 <= elapsed_ms < 400, f"2x pacing wall-time off: {elapsed_ms:.0f}ms"
 
 
+import sys
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Requires cat binary (POSIX)")
 @pytest.mark.asyncio
 async def test_process_connector_honors_send_speed_burst() -> None:
     """Process connector burst mode finishes without per-chunk sleep.
