@@ -25,6 +25,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from decibench.audio.upload_test import UploadedAudioTestSpec, run_uploaded_audio_test
 from decibench.config import load_config
 from decibench.models import CallTrace, EvalResult, SuiteResult, TraceSpan
 from decibench.providers.registry import get_judge
@@ -132,6 +133,20 @@ class FailureInboxStats(BaseModel):
     sources: dict[str, int]
     categories: dict[str, int]
     score: dict[str, float]
+
+
+class AudioTestResponse(BaseModel):
+    """Response for the dashboard uploaded-audio test path."""
+
+    call_id: str
+    evaluation_id: str
+    score: float
+    passed: bool
+    failure_summary: list[str]
+    evaluation: EvalResult
+    transcript: list[dict[str, Any]]
+    audio_duration_ms: float
+    agent_audio_bytes: int
 
 
 # --------------------------------------------------------------- dashboard SPA
@@ -256,6 +271,88 @@ async def evaluate_call(call_id: str) -> EvalResult:
     result = await evaluator.evaluate_trace(trace)
     get_store().save_call_evaluation(trace, result)
     return result
+
+
+@app.post(
+    "/audio-tests",
+    summary="Upload caller audio, send it to a voice agent, and evaluate the response",
+    response_model=AudioTestResponse,
+)
+async def run_audio_upload_test(
+    audio: UploadFile = File(...),  # noqa: B008
+    target: str = Form("demo"),
+    mode: str = Form("deterministic"),
+    caller_text: str = Form(""),
+    goal: str = Form(""),
+    must_include: str = Form(""),
+    must_not_say: str = Form(""),
+    max_latency_ms: int | None = Form(None),
+) -> AudioTestResponse:
+    """Dashboard path for testing an agent with a real uploaded caller recording.
+
+    The uploaded file is decoded to PCM, transcoded to the selected connector's
+    required format, sent over the same connector interface as suite runs, then
+    evaluated and persisted as a normal call trace + call evaluation.
+    """
+    import tempfile
+
+    from decibench.mcp._helpers import preflight_check
+
+    if mode not in {"deterministic", "semantic", "semantic-local"}:
+        raise HTTPException(status_code=400, detail="mode must be deterministic, semantic, or semantic-local")
+
+    config = load_config()
+    if mode == "deterministic":
+        config.providers.judge = "none"
+
+    preflight = preflight_check(target, mode, config)
+    if not preflight["ok"]:
+        summary = preflight.get("summary", "Pre-flight check failed.")
+        findings = preflight.get("findings", [])
+        detail = summary
+        if findings:
+            detail += "\n\nFindings:\n- " + "\n- ".join(findings)
+        raise HTTPException(status_code=400, detail=detail)
+
+    data = await audio.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Uploaded audio is empty.")
+
+    suffix = Path(audio.filename or "uploaded.wav").suffix or ".wav"
+    with tempfile.TemporaryDirectory(prefix="decibench-audio-test-") as tmp:
+        audio_path = Path(tmp) / f"caller{suffix}"
+        audio_path.write_bytes(data)
+        spec = UploadedAudioTestSpec(
+            target=target,
+            audio_path=audio_path,
+            filename=audio.filename or "uploaded-audio",
+            content_type=audio.content_type,
+            mode=mode,
+            caller_text=caller_text,
+            goal=goal,
+            must_include=_split_form_list(must_include),
+            must_not_say=_split_form_list(must_not_say),
+            max_latency_ms=max_latency_ms,
+        )
+        try:
+            outcome = await run_uploaded_audio_test(config, spec)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    store = get_store()
+    call_id = store.save_call_trace(outcome.trace)
+    evaluation_id = store.save_call_evaluation(outcome.trace, outcome.evaluation)
+    return AudioTestResponse(
+        call_id=call_id,
+        evaluation_id=evaluation_id,
+        score=outcome.evaluation.score,
+        passed=outcome.evaluation.passed,
+        failure_summary=outcome.evaluation.failure_summary,
+        evaluation=outcome.evaluation,
+        transcript=outcome.evaluation.transcript,
+        audio_duration_ms=outcome.audio_duration_ms,
+        agent_audio_bytes=outcome.agent_audio_bytes,
+    )
 
 
 @app.get(
@@ -745,3 +842,10 @@ def _slug(s: str) -> str:
     import re
 
     return re.sub(r"[^a-z0-9-]+", "-", s.lower()).strip("-")
+
+
+def _split_form_list(value: str) -> list[str]:
+    """Parse comma/newline separated text fields from multipart forms."""
+    if not value:
+        return []
+    return [item.strip() for item in value.replace("\n", ",").split(",") if item.strip()]

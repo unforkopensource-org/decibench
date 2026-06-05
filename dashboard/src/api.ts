@@ -136,6 +136,29 @@ export interface RegressionScenario {
   yaml: string
 }
 
+export interface AudioTestRequest {
+  target: string
+  audio: File
+  mode: string
+  caller_text?: string
+  goal?: string
+  must_include?: string
+  must_not_say?: string
+  max_latency_ms?: number | null
+}
+
+export interface AudioTestResponse {
+  call_id: string
+  evaluation_id: string
+  score: number
+  passed: boolean
+  failure_summary: string[]
+  evaluation: EvalResult
+  transcript: Array<Record<string, unknown>>
+  audio_duration_ms: number
+  agent_audio_bytes: number
+}
+
 // -------------------------------------------------------------------- transport
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -374,7 +397,33 @@ export function useStartRun() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }),
+    }),
+  })
+}
+
+export function useAudioUploadTest() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: AudioTestRequest) => {
+      const formData = new FormData()
+      formData.append('audio', data.audio)
+      formData.append('target', data.target)
+      formData.append('mode', data.mode)
+      if (data.caller_text) formData.append('caller_text', data.caller_text)
+      if (data.goal) formData.append('goal', data.goal)
+      if (data.must_include) formData.append('must_include', data.must_include)
+      if (data.must_not_say) formData.append('must_not_say', data.must_not_say)
+      if (data.max_latency_ms != null) formData.append('max_latency_ms', String(data.max_latency_ms))
+      return api<AudioTestResponse>('/audio-tests', {
+        method: 'POST',
+        body: formData,
+      })
+    },
+    onSuccess: data => {
+      queryClient.invalidateQueries({ queryKey: ['call-evaluations'] })
+      queryClient.invalidateQueries({ queryKey: ['failure-inbox-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['call', () => data.call_id] })
+    },
   })
 }
 

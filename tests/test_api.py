@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import io
+import math
+import struct
+import wave
 from typing import TYPE_CHECKING
 
 from fastapi.testclient import TestClient
@@ -12,6 +16,18 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 client = TestClient(app)
+
+
+def _wav_bytes(duration_s: float = 0.15, sample_rate: int = 16000) -> bytes:
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        for i in range(int(duration_s * sample_rate)):
+            sample = int(0.25 * 32767 * math.sin(2 * math.pi * 440 * (i / sample_rate)))
+            wav.writeframes(struct.pack("<h", sample))
+    return buf.getvalue()
 
 
 def test_health_check():
@@ -102,6 +118,43 @@ def test_call_evaluate_endpoint(monkeypatch, tmp_path: Path):
     detail_response = client.get(f"/call-evaluations/{evaluations[0]['id']}")
     assert detail_response.status_code == 200
     assert detail_response.json()["scenario_id"] == "imported-call-456"
+
+
+def test_audio_upload_test_endpoint_runs_agent_and_persists_results(monkeypatch, tmp_path: Path):
+    store_path = tmp_path / "api.sqlite"
+    monkeypatch.setenv("DECIBENCH_STORE_PATH", str(store_path))
+
+    response = client.post(
+        "/audio-tests",
+        data={
+            "target": "demo",
+            "mode": "deterministic",
+            "caller_text": "Hello, I need help booking an appointment.",
+            "must_include": "hello, help",
+            "max_latency_ms": "1200",
+        },
+        files={"audio": ("caller.wav", _wav_bytes(), "audio/wav")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["call_id"].startswith("audio-upload-")
+    assert payload["evaluation_id"]
+    assert 0 <= payload["score"] <= 100
+    assert payload["audio_duration_ms"] > 0
+    assert payload["agent_audio_bytes"] > 0
+    assert payload["evaluation"]["scenario_id"].startswith("audio-upload-")
+
+    store = RunStore(store_path)
+    trace = store.get_call_trace(payload["call_id"])
+    assert trace is not None
+    assert trace.source == "dashboard-audio-upload"
+    assert any(event.type.value == "caller_audio_end" for event in trace.events)
+    assert any(segment.role == "agent" for segment in trace.transcript)
+
+    latest_response = client.get(f"/calls/{payload['call_id']}/evaluation")
+    assert latest_response.status_code == 200
+    assert latest_response.json()["scenario_id"] == payload["evaluation"]["scenario_id"]
 
 
 def test_call_timeline_endpoint(monkeypatch, tmp_path: Path):

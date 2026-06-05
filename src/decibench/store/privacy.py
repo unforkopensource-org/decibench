@@ -95,8 +95,10 @@ class RedactionPolicy:
         redacted_data: dict[str, Any] = {}
         for key, value in data.items():
             k_str = str(key).lower()
-            is_secret = any(
-                sec in k_str for sec in ("api_key", "secret", "token", "password", "credentials", "key")
+            is_secret = (
+                k_str == "key"
+                or k_str.endswith("_key")
+                or any(sec in k_str for sec in ("api_key", "secret", "token", "password", "credentials"))
             )
 
             if is_secret:
