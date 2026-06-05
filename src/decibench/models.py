@@ -349,3 +349,42 @@ class CallTrace(BaseModel):
     def text(self) -> str:
         """Human-readable transcript text."""
         return "\n".join(f"{segment.role}: {segment.text}" for segment in self.transcript)
+
+
+class CallTimelinePayload(BaseModel):
+    """Lightweight timeline view for the call-detail screen.
+
+    The full ``CallTrace`` payload can be heavy (raw audio metadata, tool
+    payloads, vendor blobs). The timeline only carries what the timing chart
+    and turn list need: spans, transcript turns, and minimal event tags.
+    """
+
+    call_id: str
+    duration_ms: float
+    spans: list[TraceSpan]
+    turns: list[dict[str, Any]]
+    event_kinds: dict[str, int]
+
+
+class RegressionScenarioPayload(BaseModel):
+    """Structured response for the regression-action button.
+
+    The ``yaml`` field is what the user copies/exports; ``scenario_id`` matches
+    what the YAML's ``id:`` field will be so the frontend can pre-fill any
+    follow-up view without re-parsing.
+    """
+
+    call_id: str
+    scenario_id: str
+    yaml: str
+
+
+class FailureInboxStats(BaseModel):
+    """Aggregate counters that drive the workbench header."""
+
+    total_evaluations: int
+    failed: int
+    passed: int
+    sources: dict[str, int]
+    categories: dict[str, int]
+    score: dict[str, float]

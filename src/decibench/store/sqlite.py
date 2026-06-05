@@ -379,7 +379,10 @@ class RunStore:
         """Persist an imported-call evaluation and return its evaluation id."""
         evaluated_at = datetime.now(UTC).isoformat()
         evaluation_id = self._call_evaluation_id(trace.id, evaluated_at)
-        payload = self.redactor.redact_dict(result.model_dump(mode="json"))
+        dumped = result.model_dump(mode="json")
+        metrics = dumped.pop("metrics", {})
+        payload = self.redactor.redact_dict(dumped)
+        payload["metrics"] = metrics
 
         with self._connect() as conn:
             conn.execute(

@@ -65,8 +65,10 @@ class ProcessConnector(BaseConnector):
 
         logger.info("Spawning process: %s", command)
 
-        # Use shlex.split for safe argument parsing
-        args = shlex.split(command)
+        # Use shlex.split for safe argument parsing, with Windows compatibility
+        import os
+        # On Windows, use posix=False to correctly handle backslashes in paths
+        args = shlex.split(command, posix=not os.name == "nt")
         self._process = await asyncio.create_subprocess_exec(
             *args,
             stdin=asyncio.subprocess.PIPE,

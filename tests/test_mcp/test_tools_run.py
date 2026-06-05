@@ -22,29 +22,34 @@ def _isolated_store(monkeypatch, tmp_path: Path):
 async def test_run_test_demo():
     """Run the built-in demo agent — should complete and return a score."""
     output = await run_test(target="demo", suite="quick", mode="deterministic")
-    assert "Decibench Score" in output
-    assert "Run ID" in output
+    assert output.get("ok") is True
+    assert "score" in output
+    assert "run_id" in output
 
 
 @pytest.mark.asyncio
 async def test_run_quick_test_demo():
     output = await run_quick_test(target="demo")
-    assert "Decibench Score" in output
+    assert output.get("ok") is True
+    assert "score" in output
 
 
 @pytest.mark.asyncio
 async def test_run_test_semantic_no_key():
     """Semantic mode without API key should return a helpful error."""
     output = await run_test(target="demo", suite="quick", mode="semantic")
-    # Should either run (if key is set) or tell user to set key
-    assert "Decibench Score" in output or "Semantic mode requires" in output
+    # Should either run (if key is set) or tell user to set key or fail preflight
+    if not output.get("ok"):
+        assert any("Semantic evaluation" in f for f in output.get("findings", []))
+    else:
+        assert "score" in output
 
 
 @pytest.mark.asyncio
 async def test_run_test_stores_result():
     """After a run, the result should be queryable via the store."""
     output = await run_test(target="demo", suite="quick", mode="deterministic")
-    assert "Run ID" in output
+    assert "run_id" in output
 
     store = get_store()
     runs = store.list_runs(limit=1)

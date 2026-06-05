@@ -26,19 +26,22 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from decibench.config import load_config
-from decibench.models import CallTrace, EvalResult, SuiteResult, TraceSpan
+from decibench.models import CallTrace, EvalResult, SuiteResult, TraceSpan, FailureInboxStats
 from decibench.providers.registry import get_judge
 from decibench.rag import RagStore, ingest_paths, ingest_text, retrieve, synthesize_scenarios
 from decibench.rag.embed import CloudEgressForbidden
 from decibench.replay.evaluate import ImportedCallEvaluator
 from decibench.replay.scenario import trace_to_scenario_yaml
 from decibench.store import RunStore, default_store_path
+from decibench.api.routes import calls
 
 app = FastAPI(
     title="Decibench API",
     description="Local-first API for the Decibench failure-analysis workbench.",
     version="0.1.0",
 )
+
+app.include_router(calls.router)
 
 
 # --------------------------------------------------------------------- helpers
@@ -92,48 +95,6 @@ def get_imported_call_evaluator() -> ImportedCallEvaluator:
     return ImportedCallEvaluator.from_config(config, judge=judge)
 
 
-# ------------------------------------------------------------- response models
-
-
-class CallTimelinePayload(BaseModel):
-    """Lightweight timeline view for the call-detail screen.
-
-    The full ``CallTrace`` payload can be heavy (raw audio metadata, tool
-    payloads, vendor blobs). The timeline only carries what the timing chart
-    and turn list need: spans, transcript turns, and minimal event tags.
-    """
-
-    call_id: str
-    duration_ms: float
-    spans: list[TraceSpan]
-    turns: list[dict[str, Any]]
-    event_kinds: dict[str, int]
-
-
-class RegressionScenarioPayload(BaseModel):
-    """Structured response for the regression-action button.
-
-    The ``yaml`` field is what the user copies/exports; ``scenario_id`` matches
-    what the YAML's ``id:`` field will be so the frontend can pre-fill any
-    follow-up view without re-parsing.
-    """
-
-    call_id: str
-    scenario_id: str
-    yaml: str
-
-
-class FailureInboxStats(BaseModel):
-    """Aggregate counters that drive the workbench header."""
-
-    total_evaluations: int
-    failed: int
-    passed: int
-    sources: dict[str, int]
-    categories: dict[str, int]
-    score: dict[str, float]
-
-
 # --------------------------------------------------------------- dashboard SPA
 
 
@@ -151,6 +112,7 @@ def health() -> dict[str, str]:
 # -------------------------------------------------------------------- runs API
 
 
+
 @app.get("/runs", summary="List runs")
 def list_runs(limit: int = 50, skip: int = 0) -> list[dict[str, Any]]:
     return get_store().list_runs(limit=limit, offset=skip)
@@ -164,117 +126,9 @@ def get_run(run_id: str) -> SuiteResult:
     return result
 
 
-# ------------------------------------------------------------------- calls API
-
-
-@app.get("/calls", summary="List call traces")
-def list_calls(
-    limit: int = 50,
-    skip: int = 0,
-    source: str | None = None,
-    since: str | None = None,
-) -> list[dict[str, Any]]:
-    return get_store().list_call_traces(limit=limit, offset=skip, source=source, since=since)
-
-
-@app.get("/calls/{call_id}", summary="Get call by ID", response_model=CallTrace)
-def get_call(call_id: str) -> CallTrace:
-    trace = get_store().get_call_trace(call_id)
-    if not trace:
-        raise HTTPException(status_code=404, detail="Call trace not found.")
-    return trace
-
-
-@app.get(
-    "/calls/{call_id}/timeline",
-    summary="Get call timeline (spans + turns) for the dashboard timeline view",
-    response_model=CallTimelinePayload,
-)
-def get_call_timeline(call_id: str) -> CallTimelinePayload:
-    trace = get_call(call_id)
-    event_kinds: dict[str, int] = {}
-    for event in trace.events:
-        key = event.type.value
-        event_kinds[key] = event_kinds.get(key, 0) + 1
-    turns = [
-        {
-            "role": segment.role,
-            "text": segment.text,
-            "start_ms": segment.start_ms,
-            "end_ms": segment.end_ms,
-            "confidence": segment.confidence,
-        }
-        for segment in trace.transcript
-    ]
-    return CallTimelinePayload(
-        call_id=trace.id,
-        duration_ms=trace.duration_ms,
-        spans=trace.spans,
-        turns=turns,
-        event_kinds=event_kinds,
-    )
-
-
-@app.get(
-    "/calls/{call_id}/scenario",
-    summary="Render the regression scenario for this call as YAML text",
-    response_class=PlainTextResponse,
-)
-def get_call_scenario(call_id: str) -> str:
-    trace = get_call(call_id)
-    return trace_to_scenario_yaml(trace)
-
-
-@app.post(
-    "/calls/{call_id}/regression",
-    summary="Generate a regression scenario from a call (structured response)",
-    response_model=RegressionScenarioPayload,
-)
-def generate_regression(call_id: str) -> RegressionScenarioPayload:
-    """Workbench action: turn this failed call into a regression scenario.
-
-    Returns the YAML text plus the scenario id so the dashboard can offer
-    copy/download without a second round-trip.
-    """
-    trace = get_call(call_id)
-    yaml_text = trace_to_scenario_yaml(trace)
-    return RegressionScenarioPayload(
-        call_id=trace.id,
-        scenario_id=f"regression-{trace.id}",
-        yaml=yaml_text,
-    )
-
-
-@app.post(
-    "/calls/{call_id}/evaluate",
-    summary="Evaluate an imported call trace (and persist the result)",
-    response_model=EvalResult,
-)
-async def evaluate_call(call_id: str) -> EvalResult:
-    trace = get_call(call_id)
-    evaluator = get_imported_call_evaluator()
-    result = await evaluator.evaluate_trace(trace)
-    get_store().save_call_evaluation(trace, result)
-    return result
-
-
-@app.get(
-    "/calls/{call_id}/evaluation",
-    summary="Get the latest stored evaluation for a call",
-    response_model=EvalResult,
-)
-def get_latest_call_evaluation(call_id: str) -> EvalResult:
-    store = get_store()
-    summaries = store.list_call_evaluations(limit=1, call_id=call_id)
-    if not summaries:
-        raise HTTPException(status_code=404, detail="Call evaluation not found.")
-    result = store.get_call_evaluation(summaries[0]["id"])
-    if result is None:
-        raise HTTPException(status_code=404, detail="Call evaluation payload not found.")
-    return result
-
-
 # ---------------------------------------------------------- evaluations / inbox
+
+
 
 
 @app.get("/call-evaluations", summary="List stored imported-call evaluations")
