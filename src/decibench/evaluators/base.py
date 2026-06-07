@@ -50,7 +50,7 @@ class BaseEvaluator(ABC):
     @abstractmethod
     async def evaluate(
         self,
-        scenario: Scenario | None,  # <-- make optional
+        scenario: Scenario,
         summary: CallSummary,
         transcript: TranscriptResult,
         context: dict[str, Any],

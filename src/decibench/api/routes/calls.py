@@ -6,10 +6,11 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import PlainTextResponse
 
 from decibench.importers.audio import AudioImporter
+from decibench.mcp._helpers import get_config
 from decibench.models import CallTimelinePayload, CallTrace, EvalResult, RegressionScenarioPayload
 from decibench.replay.scenario import trace_to_scenario_yaml
 from decibench.store import get_store
@@ -135,7 +136,7 @@ async def upload_call_audio(
     agent_name: str = Form(default=""),
     scenario_id: str = Form(default=""),
     diarize: bool = Form(default=False),
-    config: DecibenchConfig = ...,  # injected via dependency
+    config: DecibenchConfig = Depends(get_config),  # noqa: B008
 ) -> dict[str, Any]:
     """Upload a call audio file for evaluation.
 
@@ -189,7 +190,7 @@ async def evaluate_uploaded_call(
     call_id: str,
     suite: str = Form(default="quick"),
     mode: str = Form(default="semantic"),
-    config: DecibenchConfig = ...,
+    config: DecibenchConfig = Depends(get_config),  # noqa: B008
 ) -> dict[str, Any]:
     """Evaluate a previously uploaded call against a test suite."""
     store = get_store()

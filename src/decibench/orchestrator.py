@@ -878,6 +878,9 @@ class Orchestrator:
             # Skip evaluators that strictly require a scenario if none loaded
             if getattr(evaluator, "requires_scenario", False) and scenario is None:
                 continue
+            # All evaluators require a scenario; skip if none available
+            if scenario is None:
+                continue
 
             try:
                 metrics = await evaluator.evaluate(scenario, summary, transcript, eval_context)

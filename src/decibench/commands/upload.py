@@ -18,7 +18,15 @@ from decibench.store import get_store
 @click.option("--suite", default="quick", help="Suite to evaluate against.")
 @click.option("--mode", default="semantic", help="Evaluation mode.")
 @click.pass_context
-def upload_audio(ctx, file: Path, agent: str, diarize: bool, evaluate: bool, suite: str, mode: str):
+def upload_audio(
+    ctx: click.Context,
+    file: Path,
+    agent: str,
+    diarize: bool,
+    evaluate: bool,
+    suite: str,
+    mode: str,
+) -> None:
     """Upload a call audio file to Decibench for analysis."""
     from decibench.config import load_config
 
@@ -27,7 +35,7 @@ def upload_audio(ctx, file: Path, agent: str, diarize: bool, evaluate: bool, sui
 
     import asyncio
 
-    async def _run():
+    async def _run() -> None:
         trace = await importer.import_file(
             file,
             source="cli_upload",
@@ -46,7 +54,7 @@ def upload_audio(ctx, file: Path, agent: str, diarize: bool, evaluate: bool, sui
 
             orch = Orchestrator(config)
             result = await orch.evaluate_trace(trace, suite=suite, mode=mode)
-            store.save_eval_result(result)
+            store.save_call_evaluation(trace, result)
 
             click.echo(f"\n  Score: {result.score:.1f}/100")
             click.echo(f"  Passed: {'✓' if result.passed else '✗'}")
