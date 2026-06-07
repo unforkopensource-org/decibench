@@ -1,12 +1,17 @@
 """Audio file loader — normalize any input format to Decibench canonical format."""
+
 from __future__ import annotations
+
 import io
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
+
 import numpy as np
 import soundfile as sf
-from typing import TYPE_CHECKING
+
 from decibench.models import AudioBuffer, AudioEncoding
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -36,8 +41,7 @@ def load_audio_file(path: Path | str) -> AudioBuffer:
 
     if path.suffix.lower() not in SUPPORTED_EXTS:
         raise AudioLoadError(
-            f"Unsupported format '{path.suffix}'. "
-            f"Supported: {', '.join(sorted(SUPPORTED_EXTS))}"
+            f"Unsupported format '{path.suffix}'. Supported: {', '.join(sorted(SUPPORTED_EXTS))}"
         )
 
     try:
@@ -46,15 +50,13 @@ def load_audio_file(path: Path | str) -> AudioBuffer:
         raise AudioLoadError(f"Failed to read audio: {e}") from e
 
     # Ensure mono format
-    if data.ndim > 1:
-        data = data.mean(axis=1).astype(np.float32)
-    else:
-        data = data.astype(np.float32)
+    data = data.mean(axis=1).astype(np.float32) if data.ndim > 1 else data.astype(np.float32)
 
     # Resample to 16 kHz if needed
     if sr != 16000:
         # Use librosa for resampling numpy array
         import librosa
+
         data = librosa.resample(data, orig_sr=sr, target_sr=16000)
 
     # Convert to 16-bit PCM
@@ -78,14 +80,12 @@ def load_audio_bytes(data: bytes, format_hint: str = "wav") -> AudioBuffer:
         raise AudioLoadError(f"Failed to decode audio bytes: {e}") from e
 
     # Ensure mono format
-    if arr.ndim > 1:
-        arr = arr.mean(axis=1).astype(np.float32)
-    else:
-        arr = arr.astype(np.float32)
+    arr = arr.mean(axis=1).astype(np.float32) if arr.ndim > 1 else arr.astype(np.float32)
 
     # Resample to 16 kHz if needed
     if sr != 16000:
         import librosa
+
         arr = librosa.resample(arr, orig_sr=sr, target_sr=16000)
 
     # Convert to 16-bit PCM

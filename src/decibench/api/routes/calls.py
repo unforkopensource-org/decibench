@@ -6,13 +6,13 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status, Query
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import PlainTextResponse
-from decibench.importers.audio import AudioImporter
-from decibench.store import get_store
-from decibench.models import CallTrace, EvalResult, CallTimelinePayload, RegressionScenarioPayload
-from decibench.replay.scenario import trace_to_scenario_yaml
 
+from decibench.importers.audio import AudioImporter
+from decibench.models import CallTimelinePayload, CallTrace, EvalResult, RegressionScenarioPayload
+from decibench.replay.scenario import trace_to_scenario_yaml
+from decibench.store import get_store
 
 if TYPE_CHECKING:
     from decibench.config import DecibenchConfig
@@ -105,8 +105,8 @@ def generate_regression(call_id: str) -> RegressionScenarioPayload:
 )
 async def evaluate_call(call_id: str) -> EvalResult:
     trace = get_call(call_id)
-    from decibench.orchestrator import Orchestrator
     from decibench.config import load_config
+    from decibench.orchestrator import Orchestrator
 
     config = load_config()
     orch = Orchestrator(config)
@@ -115,7 +115,9 @@ async def evaluate_call(call_id: str) -> EvalResult:
     return result
 
 
-@router.get("/{call_id}/evaluation", summary="Get the latest stored evaluation for a call", response_model=EvalResult)
+@router.get(
+    "/{call_id}/evaluation", summary="Get the latest stored evaluation for a call", response_model=EvalResult
+)
 def get_latest_call_evaluation(call_id: str) -> EvalResult:
     store = get_store()
     summaries = store.list_call_evaluations(limit=1, call_id=call_id)
@@ -129,7 +131,7 @@ def get_latest_call_evaluation(call_id: str) -> EvalResult:
 
 @router.post("/upload", status_code=status.HTTP_202_ACCEPTED)
 async def upload_call_audio(
-    file: UploadFile = File(...),
+    file: UploadFile = File(...),  # noqa: B008
     agent_name: str = Form(default=""),
     scenario_id: str = Form(default=""),
     diarize: bool = Form(default=False),

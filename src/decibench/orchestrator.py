@@ -22,6 +22,7 @@ from decibench.models import (
     AgentEvent,
     AudioBuffer,
     CallSummary,
+    CallTrace,
     CostBreakdown,
     EvalResult,
     EventType,
@@ -893,9 +894,7 @@ class Orchestrator:
         ]
         passed = len(failures) == 0
         all_failures = [
-            f"{m.name}: {m.value} (threshold: {m.threshold})"
-            for m in all_metrics.values()
-            if not m.passed
+            f"{m.name}: {m.value} (threshold: {m.threshold})" for m in all_metrics.values() if not m.passed
         ]
 
         score, _ = self._scorer.calculate(

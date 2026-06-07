@@ -67,8 +67,9 @@ class ProcessConnector(BaseConnector):
 
         # Use shlex.split for safe argument parsing, with Windows compatibility
         import os
+
         # On Windows, use posix=False to correctly handle backslashes in paths
-        args = shlex.split(command, posix=not os.name == "nt")
+        args = shlex.split(command, posix=os.name != "nt")
         self._process = await asyncio.create_subprocess_exec(
             *args,
             stdin=asyncio.subprocess.PIPE,

@@ -14,8 +14,8 @@ from decibench.models import (
     AudioBuffer,
     CallTrace,
     EventType,
-    TranscriptSegment,
     TranscriptResult,
+    TranscriptSegment,
 )
 from decibench.providers.registry import get_stt
 

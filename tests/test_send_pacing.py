@@ -114,6 +114,7 @@ async def test_process_connector_honors_send_speed_burst() -> None:
     the knob plumbs through.
     """
     import sys
+
     from decibench.connectors.process import ProcessConnector
 
     connector = ProcessConnector()

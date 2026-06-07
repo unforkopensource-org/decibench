@@ -25,15 +25,15 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from decibench.api.routes import calls
 from decibench.config import load_config
-from decibench.models import CallTrace, EvalResult, SuiteResult, TraceSpan, FailureInboxStats
+from decibench.models import CallTrace, EvalResult, FailureInboxStats, SuiteResult, TraceSpan
 from decibench.providers.registry import get_judge
 from decibench.rag import RagStore, ingest_paths, ingest_text, retrieve, synthesize_scenarios
 from decibench.rag.embed import CloudEgressForbidden
 from decibench.replay.evaluate import ImportedCallEvaluator
 from decibench.replay.scenario import trace_to_scenario_yaml
 from decibench.store import RunStore, default_store_path
-from decibench.api.routes import calls
 
 app = FastAPI(
     title="Decibench API",
@@ -112,7 +112,6 @@ def health() -> dict[str, str]:
 # -------------------------------------------------------------------- runs API
 
 
-
 @app.get("/runs", summary="List runs")
 def list_runs(limit: int = 50, skip: int = 0) -> list[dict[str, Any]]:
     return get_store().list_runs(limit=limit, offset=skip)
@@ -127,8 +126,6 @@ def get_run(run_id: str) -> SuiteResult:
 
 
 # ---------------------------------------------------------- evaluations / inbox
-
-
 
 
 @app.get("/call-evaluations", summary="List stored imported-call evaluations")
