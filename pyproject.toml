@@ -49,7 +49,12 @@ mcp = ["mcp>=1.9"]
 server = ["fastapi>=0.115", "uvicorn>=0.34", "python-multipart>=0.0.9"]
 rag = ["sentence-transformers>=3.0"]
 all = [
-    "decibench[tts-edge,stt-whisper,audio-quality,mcp,server,rag]",
+    "decibench[tts-edge,stt-whisper,audio-quality,mcp,server,rag,audio]",
+]
+audio = [
+    "soundfile>=0.12.0",
+    "librosa>=0.10.0",
+    "numpy>=1.24.0",
 ]
 dev = [
     "pytest>=8.3",

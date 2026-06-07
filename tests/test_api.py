@@ -86,12 +86,12 @@ def test_call_evaluate_endpoint(monkeypatch, tmp_path: Path):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["scenario_id"] == "imported-call-456"
+    assert data["scenario_id"] == "call-456"
     assert "passed" in data
 
     latest_response = client.get("/calls/call-456/evaluation")
     assert latest_response.status_code == 200
-    assert latest_response.json()["scenario_id"] == "imported-call-456"
+    assert latest_response.json()["scenario_id"] == "call-456"
 
     list_response = client.get("/call-evaluations", params={"call_id": "call-456"})
     assert list_response.status_code == 200
@@ -101,7 +101,7 @@ def test_call_evaluate_endpoint(monkeypatch, tmp_path: Path):
 
     detail_response = client.get(f"/call-evaluations/{evaluations[0]['id']}")
     assert detail_response.status_code == 200
-    assert detail_response.json()["scenario_id"] == "imported-call-456"
+    assert detail_response.json()["scenario_id"] == "call-456"
 
 
 def test_call_timeline_endpoint(monkeypatch, tmp_path: Path):

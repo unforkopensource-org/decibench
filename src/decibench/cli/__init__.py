@@ -38,6 +38,7 @@ from decibench.cli.scenario import scenario_cmd  # noqa: E402
 from decibench.cli.scoring import scoring_cmd  # noqa: E402
 from decibench.cli.serve import serve_cmd  # noqa: E402
 from decibench.cli.version import version_cmd  # noqa: E402
+from decibench.commands.upload import upload_audio  # noqa: E402
 
 main.add_command(run_cmd, "run")
 main.add_command(compare_cmd, "compare")
@@ -55,3 +56,4 @@ main.add_command(serve_cmd, "serve")
 main.add_command(version_cmd, "version")
 main.add_command(evaluate_calls_cmd, "evaluate-calls")
 main.add_command(scoring_cmd, "scoring")
+main.add_command(upload_audio, "upload-audio")

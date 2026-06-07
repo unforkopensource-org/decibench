@@ -85,12 +85,17 @@ def store_secret(provider: str, secret: str, profile: str = "default") -> None:
 
 
 def load_secret(provider: str, profile: str = "default") -> str:
-    """Load a provider secret from env var or keyring, preferring env vars."""
+    """Load a provider secret from env var or keyring, preferring env vars.
+
+    If the environment variable is present (even if empty), its value is returned.
+    This ensures that tests which set the variable to an empty string see the
+    empty value instead of falling back to a stored keyring secret.
+    """
     normalized = _normalize_secret_provider(provider)
     env_var = env_var_name(normalized)
-    env_value = os.environ.get(env_var, "")
-    if env_value:
-        return env_value
+    # Return the env var value directly if it exists (including empty string)
+    if env_var in os.environ:
+        return os.environ.get(env_var, "")
     if not keyring_available():
         return ""
     backend = _keyring

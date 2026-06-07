@@ -22,6 +22,7 @@ from decibench.models import (
     AgentEvent,
     AudioBuffer,
     CallSummary,
+    CallTrace,
     CostBreakdown,
     EvalResult,
     EventType,
@@ -808,3 +809,114 @@ class Orchestrator:
             total.judge += r.cost.get("judge", 0)
             total.platform += r.cost.get("platform", 0)
         return total
+
+    async def evaluate_trace(
+        self,
+        trace: CallTrace,
+        suite: str = "quick",
+        mode: str = "semantic",
+    ) -> EvalResult:
+        """Evaluate a previously imported call trace (uploaded audio).
+
+        This skips the connector/TTS/STT live loop and runs evaluators
+        directly on the stored transcript and events.
+        """
+        start = time.monotonic()
+
+        # 1. Load scenario if requested
+        scenarios = self._scenario_loader.load_suite(suite)
+        # For uploaded audio, we typically evaluate against a single scenario
+        # or run evaluators without a scenario. Here we use the first matching
+        # or a generic placeholder.
+        scenario = scenarios[0] if scenarios else None
+
+        # 2. Resolve judge if semantic mode
+        judge = None
+        if mode in ("semantic", "semantic+rag") and self._config.has_judge:
+            judge = get_judge(
+                self._config.providers.judge,
+                model=self._config.providers.judge_model,
+                api_key=self._config.providers.judge_api_key,
+                temperature=self._config.evaluation.judge_temperature,
+                judge_runs=self._config.evaluation.judge_runs,
+            )
+
+        # 3. Build synthetic CallSummary from trace
+        summary = CallSummary(
+            duration_ms=trace.duration_ms,
+            turn_count=len(trace.transcript),
+            events=trace.events,
+            spans=trace.spans,
+            platform_metadata=trace.metadata,
+        )
+
+        # 4. Build transcript result
+        transcript = TranscriptResult(
+            text=" ".join(seg.text for seg in trace.transcript),
+            segments=trace.transcript,
+            language="en",
+            duration_ms=trace.duration_ms,
+        )
+
+        # 5. Run evaluators
+        all_metrics: dict[str, MetricResult] = {}
+        bands = self._config.scoring.latency_bands
+        eval_context: dict[str, Any] = {
+            "judge": judge,
+            "config": self._config,
+            "latency_bands": bands,
+            "p50_max_ms": bands.p50[1],
+            "p95_max_ms": bands.p95[1],
+            "p99_max_ms": bands.p99[1],
+            "ttfw_max_ms": bands.ttfw[1],
+            "reference_audio": None,
+        }
+
+        for evaluator in self._evaluators:
+            if evaluator.requires_judge and judge is None:
+                continue
+            # Skip evaluators that strictly require a scenario if none loaded
+            if getattr(evaluator, "requires_scenario", False) and scenario is None:
+                continue
+            # All evaluators require a scenario; skip if none available
+            if scenario is None:
+                continue
+
+            try:
+                metrics = await evaluator.evaluate(scenario, summary, transcript, eval_context)
+                for metric in metrics:
+                    all_metrics[metric.name] = metric
+            except Exception as e:
+                logger.warning("Evaluator '%s' failed on trace '%s': %s", evaluator.name, trace.id, e)
+
+        # 6. Score
+        failures = [
+            f"{m.name}: {m.value} (threshold: {m.threshold})"
+            for m in all_metrics.values()
+            if not m.passed and self._config.scoring.get_policy(m.name) == "blocking"
+        ]
+        passed = len(failures) == 0
+        all_failures = [
+            f"{m.name}: {m.value} (threshold: {m.threshold})" for m in all_metrics.values() if not m.passed
+        ]
+
+        score, _ = self._scorer.calculate(
+            [EvalResult(scenario_id=trace.id, passed=passed, score=0.0, metrics=all_metrics)],
+            self._config.scoring.weights,
+            self._config.has_judge,
+            policies=self._config.scoring,
+        )
+
+        # Cleanup
+        if judge is not None and hasattr(judge, "close"):
+            await judge.close()
+
+        return EvalResult(
+            scenario_id=trace.id,
+            passed=passed,
+            score=score,
+            metrics=all_metrics,
+            failures=all_failures,
+            duration_ms=(time.monotonic() - start) * 1000,
+            transcript=[{"role": seg.role, "text": seg.text} for seg in trace.transcript],
+        )

@@ -113,11 +113,14 @@ async def test_process_connector_honors_send_speed_burst() -> None:
     this connector is tested at the orchestrator level; here we just confirm
     the knob plumbs through.
     """
+    import sys
+
     from decibench.connectors.process import ProcessConnector
 
     connector = ProcessConnector()
-    # `cat` reads stdin and writes to stdout; sufficient as a black hole + echo.
-    handle = await connector.connect("exec:cat", {"send_speed": 0.0})
+    # Cross-platform: run a Python command that drains stdin and does nothing
+    python_cmd = f'{sys.executable} -c "import sys; sys.stdin.buffer.read()"'
+    handle = await connector.connect(f"exec:{python_cmd}", {"send_speed": 0.0})
     try:
         t0 = time.monotonic()
         await connector.send_audio(handle, AudioBuffer(data=_PAYLOAD, sample_rate=16000))

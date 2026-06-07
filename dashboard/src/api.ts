@@ -256,6 +256,36 @@ export function useEvaluateCall() {
   })
 }
 
+export interface UploadCallResponse {
+  call_id: string
+  source: string
+  target: string
+  started_at: string
+  duration_ms: number
+  imported_at: string
+}
+
+export function useUploadCallAudio() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { file: File; agent_name?: string; diarize?: boolean }) => {
+      const formData = new FormData()
+      formData.append('file', data.file)
+      if (data.agent_name) formData.append('agent_name', data.agent_name)
+      formData.append('diarize', data.diarize ? 'true' : 'false')
+
+      return api<UploadCallResponse>('/calls/upload', {
+        method: 'POST',
+        body: formData,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-evaluations'] })
+      queryClient.invalidateQueries({ queryKey: ['failure-inbox-stats'] })
+    },
+  })
+}
+
 export function useGenerateRegression() {
   return useMutation({
     mutationFn: (callId: string) =>

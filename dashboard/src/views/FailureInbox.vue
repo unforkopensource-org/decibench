@@ -8,6 +8,7 @@ import {
 } from '../api'
 import ErrorBox from '../components/ErrorBox.vue'
 import Spinner from '../components/Spinner.vue'
+import AudioUpload from '../components/AudioUpload.vue'
 import { formatScore, relativeTime } from '../format'
 
 const filters = reactive<FailureInboxFilters>({
@@ -32,12 +33,17 @@ const sortedCategories = computed(() =>
 
 <template>
   <section class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight text-ink-900">Failure Inbox</h1>
-      <p class="mt-1 text-sm text-ink-500">
-        Stored evaluations from imported and live calls — failed-first.
-      </p>
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-ink-900">Failure Inbox</h1>
+        <p class="mt-1 text-sm text-ink-500">
+          Stored evaluations from imported and live calls — failed-first.
+        </p>
+      </div>
     </div>
+
+    <!-- Audio upload section -->
+    <AudioUpload />
 
     <!-- Aggregate header -->
     <div v-if="statsLoading" class="card p-4"><Spinner label="Loading stats…" /></div>
