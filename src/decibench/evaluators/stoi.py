@@ -141,33 +141,36 @@ class STOIEvaluator(BaseEvaluator):
     def _spectral_clarity(audio: AudioBuffer) -> float:
         """Measure energy concentration in the speech frequency band (300-3400 Hz).
 
+        Analyzes the full audio using a sliding window (2048-sample frames,
+        50% overlap) and returns the mean clarity across all frames.
+        A single 128ms window is not representative of multi-minute calls.
+
         Returns 0-1: proportion of energy in the speech band vs total.
-        A clean speech signal concentrates energy here; noise is broadband.
         Returns -1 if audio is too short.
         """
         signal = np.frombuffer(audio.data, dtype=np.int16).astype(np.float64)
         if len(signal) < 1024:
             return -1.0
 
-        # Use FFT on windowed segments
-        n_fft = 2048
-        if len(signal) < n_fft:
-            n_fft = len(signal)
+        n_fft = min(2048, len(signal))
+        hop = n_fft // 2
+        clarity_scores = []
 
-        spectrum = np.abs(np.fft.rfft(signal[:n_fft]))
-        freqs = np.fft.rfftfreq(n_fft, d=1.0 / audio.sample_rate)
+        for start in range(0, len(signal) - n_fft + 1, hop):
+            frame = signal[start : start + n_fft]
+            spectrum = np.abs(np.fft.rfft(frame))
+            freqs = np.fft.rfftfreq(n_fft, d=1.0 / audio.sample_rate)
+            total_energy = np.sum(spectrum**2)
+            if total_energy < 1e-10:
+                continue
+            speech_mask = (freqs >= 300) & (freqs <= 3400)
+            speech_energy = np.sum(spectrum[speech_mask] ** 2)
+            ratio = speech_energy / total_energy
+            clarity_scores.append(float(np.clip((ratio - 0.3) / 0.4, 0.0, 1.0)))
 
-        total_energy = np.sum(spectrum**2)
-        if total_energy < 1e-10:
+        if not clarity_scores:
             return 0.0
-
-        # Speech band: 300-3400 Hz
-        speech_mask = (freqs >= 300) & (freqs <= 3400)
-        speech_energy = np.sum(spectrum[speech_mask] ** 2)
-
-        ratio = speech_energy / total_energy
-        # Map: 0.3 ratio = 0.0, 0.7+ ratio = 1.0
-        return float(np.clip((ratio - 0.3) / 0.4, 0.0, 1.0))
+        return float(np.mean(clarity_scores))
 
     @staticmethod
     def _stt_confidence_score(transcript: TranscriptResult) -> float:

@@ -139,7 +139,7 @@ class ComplianceEvaluator(BaseEvaluator):
             if agent_parts:
                 return " ".join(agent_parts)
         # Fallback: no segmented roles available
-        return transcript.text.lower()
+        return (transcript.text or "").lower()
 
     @staticmethod
     def _detect_pii(text: str) -> list[dict[str, str]]:

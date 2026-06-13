@@ -45,6 +45,20 @@ def _make_silence(duration_s: float, sr: int = 16000) -> bytes:
     return bytes(int(sr * duration_s) * 2)
 
 
+def _summary_with_turn_gaps(gaps_ms: list[float]) -> CallSummary:
+    """Create summary with CALLER_AUDIO_END + AGENT_AUDIO event pairs."""
+    from decibench.models import AgentEvent, EventType
+
+    events = []
+    t = 0.0
+    for gap_ms in gaps_ms:
+        events.append(AgentEvent(type=EventType.CALLER_AUDIO_END, timestamp_ms=t, data={"role": "caller"}))
+        t += gap_ms
+        events.append(AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=t))
+        t += 2000
+    return CallSummary(duration_ms=t, turn_count=len(gaps_ms), events=events)
+
+
 def _make_tone_then_silence(tone_s: float, silence_s: float) -> bytes:
     """Generate audio with tone followed by silence."""
     return _make_tone(440, tone_s) + _make_silence(silence_s)
@@ -123,6 +137,53 @@ async def test_audio_with_long_silence():
     # Should detect at least one silence segment
     assert segments.value >= 1
     assert pct.value > 0
+
+
+@pytest.mark.asyncio
+async def test_turn_gap_passes_below_default():
+    """Turn gap below default 1500ms -> passes."""
+    evaluator = SilenceEvaluator()
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary_with_turn_gaps([500, 800, 1000]),
+        _transcript(),
+        context={},
+    )
+    turn_gap = next((r for r in results if r.name == "turn_gap_avg_ms"), None)
+    assert turn_gap is not None
+    assert turn_gap.value <= 1500
+    assert turn_gap.passed is True
+
+
+@pytest.mark.asyncio
+async def test_turn_gap_fails_above_default():
+    """Turn gap above default 1500ms -> fails."""
+    evaluator = SilenceEvaluator()
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary_with_turn_gaps([2000, 3000]),
+        _transcript(),
+        context={},
+    )
+    turn_gap = next((r for r in results if r.name == "turn_gap_avg_ms"), None)
+    assert turn_gap is not None
+    assert turn_gap.passed is False
+
+
+@pytest.mark.asyncio
+async def test_turn_gap_custom_threshold():
+    """Custom dead_air_max_ms overrides default."""
+    evaluator = SilenceEvaluator()
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary_with_turn_gaps([2000, 2500]),
+        _transcript(),
+        context={"dead_air_max_ms": 3000},
+    )
+    turn_gap = next((r for r in results if r.name == "turn_gap_avg_ms"), None)
+    assert turn_gap is not None
+    assert turn_gap.threshold == 3000
+    assert turn_gap.passed is True
 
 
 @pytest.mark.asyncio

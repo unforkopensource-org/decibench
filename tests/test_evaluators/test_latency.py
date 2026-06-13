@@ -63,6 +63,12 @@ def _summary_with_events(turn_latencies_ms: list[float]) -> CallSummary:
     )
 
 
+def _bands_context() -> dict:
+    from decibench.config import LatencyScoringConfig
+
+    return {"latency_bands": LatencyScoringConfig()}
+
+
 def _transcript() -> TranscriptResult:
     return TranscriptResult(text="Hello", segments=[])
 
@@ -131,6 +137,52 @@ async def test_latency_slow_agent():
         failed = [r for r in results if not r.passed]
         # With 3-5 second latencies, something should fail
         assert len(failed) >= 0  # Don't assert failure count — depends on impl
+
+
+@pytest.mark.asyncio
+async def test_latency_with_bands_context():
+    """latency_bands in context is used for response_gap_avg_ms threshold."""
+    evaluator = LatencyEvaluator()
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary_with_events([400, 500, 600]),
+        _transcript(),
+        context=_bands_context(),
+    )
+    gap = next((r for r in results if r.name == "response_gap_avg_ms"), None)
+    assert gap is not None
+    assert gap.threshold == 1500  # response_gap[1]
+    assert gap.details["target_range"] == "<1500ms"
+
+
+@pytest.mark.asyncio
+async def test_latency_response_gap_fallback():
+    """response_gap_max_ms context key works as fallback when latency_bands absent."""
+    evaluator = LatencyEvaluator()
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary_with_events([400, 500, 600]),
+        _transcript(),
+        context={"response_gap_max_ms": 2000},
+    )
+    gap = next((r for r in results if r.name == "response_gap_avg_ms"), None)
+    assert gap is not None
+    assert gap.threshold == 2000
+
+
+@pytest.mark.asyncio
+async def test_latency_bands_ttfw():
+    """latency_bands also drives TTFW threshold."""
+    evaluator = LatencyEvaluator()
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary_with_events([300, 400]),
+        _transcript(),
+        context=_bands_context(),
+    )
+    ttfw = next((r for r in results if r.name == "ttfw_ms"), None)
+    if ttfw is not None:
+        assert ttfw.threshold == 800  # ttfw[1]
 
 
 @pytest.mark.asyncio

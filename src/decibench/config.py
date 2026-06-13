@@ -167,6 +167,8 @@ class LatencyScoringConfig(BaseModel):
     p95: tuple[int, int, int] = (500, 1200, 3000)
     p99: tuple[int, int, int] = (800, 2000, 5000)
     ttfw: tuple[int, int, int] = (300, 800, 2000)
+    response_gap: tuple[int, int, int] = (300, 1500, 5000)
+    turn_gap: tuple[int, int, int] = (500, 1500, 10000)
 
     @staticmethod
     def score_band(value: float, band: tuple[int, int, int]) -> float:

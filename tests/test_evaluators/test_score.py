@@ -1,6 +1,11 @@
-"""Tests for Decibench Score calculator."""
+"""Tests for Decibench Score calculator.
+
+Uses ``from __future__ import annotations`` for cleaner type hints.
+"""
 
 from __future__ import annotations
+
+import pytest
 
 from decibench.config import ScoringWeights
 from decibench.evaluators.score import DecibenchScorer
@@ -84,6 +89,70 @@ def test_scorer_compliance_failure():
     score, _breakdown = scorer.calculate([result], ScoringWeights(), has_judge=True)
     # Compliance failure should impact score
     assert score < 90
+
+
+def test_intelligibility_curve_exact():
+    """intelligibility_estimate normalizer: 0.0->0, 0.45->50, 0.85->100."""
+    scorer = DecibenchScorer()
+    from decibench.models import EvalResult, MetricResult
+
+    def check(val: float, expected: float) -> None:
+        result = EvalResult(
+            scenario_id="test",
+            passed=True,
+            score=0.0,
+            metrics={
+                "intelligibility_estimate": MetricResult(
+                    name="intelligibility_estimate", value=val, unit="", passed=True
+                )
+            },
+        )
+        _, breakdown = scorer.calculate([result], ScoringWeights(), has_judge=True)
+        assert breakdown.get("audio_quality", 0) == pytest.approx(expected, abs=1), (
+            f"value={val} expected={expected}"
+        )
+
+    check(0.0, 0.0)
+    check(0.45, round(0.45 / 0.85 * 100, 1))
+    check(0.85, 100.0)
+
+
+def test_response_gap_band_scoring():
+    """response_gap_avg_ms score matches score_band curve."""
+    scorer = DecibenchScorer()
+    from decibench.config import LatencyScoringConfig
+    from decibench.models import EvalResult, MetricResult
+
+    bands = LatencyScoringConfig()
+    result = EvalResult(
+        scenario_id="test",
+        passed=True,
+        score=0.0,
+        metrics={
+            "response_gap_avg_ms": MetricResult(name="response_gap_avg_ms", value=300, unit="ms", passed=True)
+        },
+    )
+    _, breakdown = scorer.calculate([result], ScoringWeights(), has_judge=True)
+    expected = LatencyScoringConfig.score_band(300, bands.response_gap)
+    assert breakdown.get("latency", 0) == pytest.approx(expected, abs=1)
+
+
+def test_turn_gap_band_scoring():
+    """turn_gap_avg_ms score matches score_band curve."""
+    scorer = DecibenchScorer()
+    from decibench.config import LatencyScoringConfig
+    from decibench.models import EvalResult, MetricResult
+
+    bands = LatencyScoringConfig()
+    result = EvalResult(
+        scenario_id="test",
+        passed=True,
+        score=0.0,
+        metrics={"turn_gap_avg_ms": MetricResult(name="turn_gap_avg_ms", value=500, unit="ms", passed=True)},
+    )
+    _, breakdown = scorer.calculate([result], ScoringWeights(), has_judge=True)
+    expected = LatencyScoringConfig.score_band(500, bands.turn_gap)
+    assert breakdown.get("robustness", 0) == pytest.approx(expected, abs=1)
 
 
 def test_scorer_excludes_untested_categories():

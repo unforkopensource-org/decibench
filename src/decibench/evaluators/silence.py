@@ -147,7 +147,7 @@ class SilenceEvaluator(BaseEvaluator):
 
         max_gap = max(gaps)
         avg_gap = sum(gaps) / len(gaps)
-        dead_air_threshold = context.get("dead_air_max_ms", 3000)
+        dead_air_threshold = context.get("dead_air_max_ms", 1500)
 
         return [
             MetricResult(

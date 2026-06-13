@@ -111,9 +111,10 @@ class LatencyEvaluator(BaseEvaluator):
                 )
             )
 
-            # Average response gap — sweet spot is 200-1500ms
+            # Average response gap — reads from latency_bands like p50/p95/p99
             avg_gap = statistics.mean(turn_latencies)
-            gap_max = context.get("response_gap_max_ms", 1500)
+            bands = context.get("latency_bands")
+            gap_max = bands.response_gap[1] if bands is not None else context.get("response_gap_max_ms", 1500)
             results.append(
                 MetricResult(
                     name="response_gap_avg_ms",

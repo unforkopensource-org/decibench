@@ -255,14 +255,7 @@ class DecibenchScorer:
         if name == "turn_latency_p99_ms":
             return LatencyScoringConfig.score_band(value, bands.p99)
         if name == "response_gap_avg_ms":
-            # Sweet spot 300-600ms. >1500ms = 0
-            if 300 <= value <= 600:
-                return 100.0
-            if value < 300:
-                return max(50, 100 - (300 - value) / 6)  # Too fast is mildly bad
-            if value >= 1500:
-                return 0.0
-            return max(0, 100 - ((value - 600) / 900 * 100))
+            return LatencyScoringConfig.score_band(value, bands.response_gap)
 
         # --- Audio quality ---
         if name == "mos_ovrl":
@@ -273,12 +266,12 @@ class DecibenchScorer:
                 return 0.0
             return (value - 2.5) / 2.0 * 100
         if name == "intelligibility_estimate":
-            # Already 0-1. 0.85+ = 100, 0.5 = 50, <0.3 = 0
+            # Already 0-1. 0.85+ = 100, 0.45 = 50 (aligned with evaluator threshold), 0.0 = 0
             if value >= 0.85:
                 return 100.0
-            if value <= 0.3:
+            if value <= 0.0:
                 return 0.0
-            return (value - 0.3) / 0.55 * 100
+            return (value / 0.85) * 100
         if name == "audio_quality_estimate":
             # Heuristic-based, capped at 4.0. Same curve as mos_ovrl.
             if value >= 4.5:
@@ -317,12 +310,7 @@ class DecibenchScorer:
                 return 0.0
             return max(0, 100 - value * (100 / 15))
         if name == "turn_gap_avg_ms":
-            # 500ms = 100, 1500ms = 50, 5000ms = 0
-            if value <= 500:
-                return 100.0
-            if value >= 5000:
-                return 0.0
-            return max(0, 100 - ((value - 500) / 4500 * 100))
+            return LatencyScoringConfig.score_band(value, bands.turn_gap)
 
         # --- Counts: 0 violations is best ---
         if name == "pii_violations":

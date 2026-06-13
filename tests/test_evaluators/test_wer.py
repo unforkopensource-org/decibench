@@ -80,6 +80,17 @@ async def test_wer_no_reference(evaluator):
 
 
 @pytest.mark.asyncio
+async def test_wer_none_transcript_text(evaluator, scenario_with_ref):
+    """transcript.text = None should not crash (null guard fix)."""
+    transcript = TranscriptResult.model_construct(text=None, language="en")
+    summary = CallSummary(duration_ms=1000, turn_count=1)
+    results = await evaluator.evaluate(scenario_with_ref, summary, transcript, {})
+    assert len(results) > 0
+    assert results[0].value == 100.0
+    assert results[0].passed is False
+
+
+@pytest.mark.asyncio
 async def test_wer_skips_caller_only_reference(evaluator):
     scenario = Scenario(
         id="test-caller-only",
