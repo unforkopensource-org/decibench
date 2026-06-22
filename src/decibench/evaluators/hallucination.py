@@ -336,26 +336,45 @@ def _normalize_date(text: str) -> list[str]:
     return [f.lower() for f in forms]
 
 
+def _word_boundary_check(needle: str, haystack: str) -> bool:
+    """Check if needle appears as a whole word in haystack (word-boundary regex).
+
+    NOTE: entities starting with non-word characters (e.g. ``$500``) do NOT
+    match via the direct path because ``\\b`` requires a word-character
+    predecessor. These are handled by the type-specific normalization paths
+    (money, time, date, numbers) below.
+    """
+    if not needle:
+        return False
+    return bool(re.search(r"\b" + re.escape(needle) + r"\b", haystack))
+
+
+def _any_form_grounded(forms: list[str], ground_text: str) -> bool:
+    """Check if any normalized form appears as a whole word in ground_text."""
+    return any(_word_boundary_check(f, ground_text) for f in forms)
+
+
 def _is_entity_grounded(entity: str, ground_text: str) -> bool:
     """Check if an entity is grounded using normalized comparison.
 
     Goes beyond substring matching: generates multiple normalized
-    forms of the entity and checks if ANY form appears in the
-    grounding context.
+    forms of the entity and checks if ANY form appears as a whole
+    word (word-boundary) in the grounding context. Prevents false
+    positives like "500" matching inside "1500".
     """
     entity_lower = entity.lower()
 
-    # Direct substring match (fast path)
-    if entity_lower in ground_text:
+    # Direct word-boundary match (fast path)
+    if _word_boundary_check(entity_lower, ground_text):
         return True
 
     # Money: "$500" should match "500 dollars", "500.00", etc.
     if entity.startswith("$"):
-        return any(form in ground_text for form in _normalize_money(entity))
+        return _any_form_grounded(_normalize_money(entity), ground_text)
 
     # Time: "2:00 PM" should match "14:00", "2 pm", etc.
     if re.match(r"\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?", entity):
-        return any(form in ground_text for form in _normalize_time(entity))
+        return _any_form_grounded(_normalize_time(entity), ground_text)
 
     # Date: "January 15" should match "Jan 15", "1/15", etc.
     if re.match(
@@ -364,12 +383,12 @@ def _is_entity_grounded(entity: str, ground_text: str) -> bool:
         entity,
         re.IGNORECASE,
     ):
-        return any(form in ground_text for form in _normalize_date(entity))
+        return _any_form_grounded(_normalize_date(entity), ground_text)
 
     # Day names: case-insensitive (already handled by .lower())
     # Numbers: try with/without leading zeros
     if re.match(r"^\d+$", entity):
         stripped = entity.lstrip("0") or "0"
-        return stripped in ground_text or entity in ground_text
+        return _word_boundary_check(stripped, ground_text) or _word_boundary_check(entity, ground_text)
 
     return False

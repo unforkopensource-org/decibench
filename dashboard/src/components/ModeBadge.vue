@@ -28,7 +28,7 @@ const label = computed(() => {
 
 <template>
   <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" :class="modeClass">
-    <template if="props.mode === 'deterministic'">
+    <template v-if="props.mode === 'deterministic'">
       <svg class="mr-1.5 h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="4 14 10 14 10 20"></polyline>
         <polyline points="20 10 14 10 14 4"></polyline>

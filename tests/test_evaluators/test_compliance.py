@@ -129,6 +129,22 @@ async def test_ai_disclosure_missing():
 
 
 @pytest.mark.asyncio
+async def test_none_transcript_text():
+    """transcript.text = None should not crash (null guard fix)."""
+    evaluator = ComplianceEvaluator()
+    transcript = TranscriptResult.model_construct(text=None, segments=[])
+    results = await evaluator.evaluate(
+        _scenario(),
+        _summary(),
+        transcript,
+        context={},
+    )
+    names = {r.name for r in results}
+    assert "pii_violations" in names
+    assert "ai_disclosure" in names
+
+
+@pytest.mark.asyncio
 async def test_empty_transcript():
     """Empty transcript should not crash and produce results."""
     evaluator = ComplianceEvaluator()

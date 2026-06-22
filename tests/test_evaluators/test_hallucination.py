@@ -130,6 +130,43 @@ def test_entity_extraction_dates():
     assert score >= 50.0
 
 
+def test_word_boundary_no_false_match():
+    """Word-boundary regex prevents '500' matching inside '1500' in grounding."""
+    evaluator = HallucinationEvaluator()
+    grounding = "Tool result: {'amount': '1500'}"
+    transcript = _transcript("Your balance is 500 dollars.")
+    score = evaluator._entity_grounding_check(transcript, grounding)
+    assert score == 0.0  # 500 not grounded in 1500 -> hallucination detected
+
+
+def test_word_boundary_matches_adjacent_punctuation():
+    """Entity adjacent to punctuation still matches (e.g., '$500' in dict string)."""
+    evaluator = HallucinationEvaluator()
+    grounding = "Tool result: {'amount': '$500', 'date': 'Tuesday'}"
+    transcript = _transcript("Your balance is $500 due on Tuesday.")
+    score = evaluator._entity_grounding_check(transcript, grounding)
+    assert score >= 80.0
+
+
+def test_normalized_money_with_word_boundary():
+    """ "$500" matches normalized "500" with word boundaries in dict string."""
+    evaluator = HallucinationEvaluator()
+    from decibench.evaluators.hallucination import _is_entity_grounded
+
+    ground_text = "tool result: {'amount': '$500'}"
+    assert _is_entity_grounded("$500", ground_text) is True
+    assert _is_entity_grounded("500", ground_text) is True
+
+
+def test_normalized_time_with_word_boundary():
+    """ "2:00 PM" matches via normalized forms with word boundaries."""
+    evaluator = HallucinationEvaluator()
+    from decibench.evaluators.hallucination import _is_entity_grounded
+
+    ground_text = "tool result: {'time': '2:00 pm'}"
+    assert _is_entity_grounded("2:00 PM", ground_text) is True
+
+
 def test_trivial_numbers_not_penalized():
     """Trivial numbers (1, 2) should not count as hallucination."""
     evaluator = HallucinationEvaluator()

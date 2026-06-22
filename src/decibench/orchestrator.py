@@ -499,6 +499,7 @@ class Orchestrator:
                     "p95_max_ms": bands.p95[1],
                     "p99_max_ms": bands.p99[1],
                     "ttfw_max_ms": bands.ttfw[1],
+                    "response_gap_max_ms": bands.response_gap[1],
                     # Fix #4: Pass reference audio for real STOI computation
                     "reference_audio": last_caller_audio.data if last_caller_audio else None,
                 }
@@ -869,6 +870,7 @@ class Orchestrator:
             "p95_max_ms": bands.p95[1],
             "p99_max_ms": bands.p99[1],
             "ttfw_max_ms": bands.ttfw[1],
+            "response_gap_max_ms": bands.response_gap[1],
             "reference_audio": None,
         }
 

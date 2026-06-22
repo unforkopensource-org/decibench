@@ -149,8 +149,7 @@ class InterruptionEvaluator(BaseEvaluator):
                 ]
                 if len(overlapping) >= 2:
                     span = overlapping[-1].timestamp_ms - overlapping[0].timestamp_ms
-                    chunk = span / (len(overlapping) - 1)
-                    total_overlap += span + chunk
+                    total_overlap += span
                 elif len(overlapping) == 1:
                     evt = overlapping[0]
                     if evt.audio:
@@ -168,8 +167,7 @@ class InterruptionEvaluator(BaseEvaluator):
                 if len(post_int_audio) >= 2:
                     first_ts = post_int_audio[0].timestamp_ms
                     last_ts = post_int_audio[-1].timestamp_ms
-                    chunk_ms = (last_ts - first_ts) / (len(post_int_audio) - 1)
-                    total_overlap += (last_ts - first_ts) + chunk_ms
+                    total_overlap += last_ts - first_ts
                 elif len(post_int_audio) == 1:
                     evt = post_int_audio[0]
                     if evt.audio:

@@ -185,6 +185,67 @@ def test_repetition_no_repeats():
     assert score == 100.0
 
 
+def test_overlap_mode1_exact_value():
+    """Mode 1 overlap: 3 agent audio events between interruption and caller end -> span only."""
+    from decibench.models import AgentEvent, EventType
+
+    events = [
+        AgentEvent(type=EventType.CALLER_AUDIO_END, timestamp_ms=500),
+        AgentEvent(type=EventType.INTERRUPTION, timestamp_ms=1000),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1050),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1150),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1250),
+    ]
+    summary = CallSummary(duration_ms=5000, turn_count=2, events=events)
+    overlap = InterruptionEvaluator._detect_audio_overlap(summary)
+    # span = 1250-1050 = 200 (no +chunk)
+    assert overlap == 200.0
+
+
+def test_overlap_mode2_exact_value():
+    """Mode 2 overlap: 3 agent audio events after interruption -> span only."""
+    from decibench.models import AgentEvent, EventType
+
+    events = [
+        AgentEvent(type=EventType.INTERRUPTION, timestamp_ms=1000),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1100),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1300),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1500),
+    ]
+    summary = CallSummary(duration_ms=5000, turn_count=2, events=events)
+    overlap = InterruptionEvaluator._detect_audio_overlap(summary)
+    # span = 1500-1100 = 400 (no +chunk)
+    assert overlap == 400.0
+
+
+def test_overlap_mode1_single_event():
+    """Mode 1 single agent audio event after interruption -> 100ms fallback."""
+    from decibench.models import AgentEvent, EventType
+
+    events = [
+        AgentEvent(type=EventType.CALLER_AUDIO_END, timestamp_ms=500),
+        AgentEvent(type=EventType.INTERRUPTION, timestamp_ms=1000),
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=1100),
+    ]
+    summary = CallSummary(duration_ms=5000, turn_count=2, events=events)
+    overlap = InterruptionEvaluator._detect_audio_overlap(summary)
+    # Single event, no audio -> 100ms fallback
+    assert overlap == 100.0
+
+
+def test_overlap_no_interruptions():
+    """No interruption events -> 0."""
+    from decibench.models import AgentEvent, EventType
+
+    events = [
+        AgentEvent(type=EventType.AGENT_AUDIO, timestamp_ms=100),
+        AgentEvent(type=EventType.TURN_END, timestamp_ms=500),
+    ]
+    summary = CallSummary(duration_ms=5000, turn_count=2, events=events)
+    overlap = InterruptionEvaluator._detect_audio_overlap(summary)
+    assert overlap == 0.0
+
+
 def test_repetition_identical_segments():
     """Identical consecutive segments → detected as repetition."""
     transcript = _transcript(

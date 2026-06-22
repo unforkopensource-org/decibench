@@ -46,7 +46,7 @@ class WEREvaluator(BaseEvaluator):
     ) -> list[MetricResult]:
         results: list[MetricResult] = []
 
-        agent_text = transcript.text.strip()
+        agent_text = (transcript.text or "").strip()
         if not agent_text:
             results.append(
                 MetricResult(
